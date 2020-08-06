@@ -1,4 +1,4 @@
-# ldb - should it be ld? (even leaner)
+# ld
 Lean database - it's a "no crap"-database; there is no database administration stuff, it's just an `rpc`-based server 
 which can ingest any `value` and store it at a `key`, it was first meant for `gRPC`, where the encoded binary message 
 is stored, and served with no touching the value on the server-side. To that end it is mostly a `gRPC`-cache, 
