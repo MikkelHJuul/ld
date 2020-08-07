@@ -6,41 +6,52 @@ but I intend it to be a more general building block;
 To empower the developer, for her to take her own steps in developing the data-storage-solution of her liking. 
 Mostly this project is a learning project for myself, to learn `golang`, `rpc` and `gRPC`.
 
+The project will probably be `golang`. It will be packaged as a `scratch`-container (linux amd64).
 
-##API
+## API
 
 ```gotemplate
-service {
+service ld {
     ## read
-    rpc Fetch(Id) returns (YourObject) 
-    rpc FetchMany(stream Id) returns (stream YourObject) 
-    rpc FetchRange(IdRange) returns (stream YourObject)
+    rpc Fetch(Id) returns (YourObjectMessage) 
+    rpc FetchMany(stream Id) returns (stream YourObjectMessage) 
+    rpc FetchRange(IdRange) returns (stream YourObjectMessage)
     
     ## Delete 
-    rpc Delete(Id) returns (YourObject) 
-    rpc DeleteMany(stream Id) returns (stream YourObject) 
-    rpc DeleteRange(IdRange) returns (stream YourObject)
+    rpc Delete(Id) returns (YourObjectMessage) 
+    rpc DeleteMany(stream Id) returns (stream YourObjectMessage) 
+    rpc DeleteRange(IdRange) returns (stream YourObjectMessage)
     
     ## Create
-    rpc Add(YourObject) returns (AddResponse)  # you have to query /{id} or add header X-LDB-id: {id}
-    rpc AddMany(stream YourObject) return (stream AddResponse)  
-    # dunno if this is even possible when the id has to be sent
+    rpc Insert(YourObjectMessage) returns (InsertResponse)
+    rpc InsertMany(stream YourObjectMessage) return (stream InsertResponse)  
 }
-struct Id {
-    id char[]/string/whichever native works best maybe hex?   
+message Id {
+    string id = 1
 }
-struct IdRange {
-    from char[]/string/whichever native works best maybe hex?   
-    to char[]/string/whichever native works best maybe hex?   
-    # .. maybe something better?
-}
-
-struct AddResponse{
-    OK bool  # false means the ID is taken.
-    # ... more? return YourObject?
+message IdRange {
+    Id from = 1   
+    Id to = 2  # non-inclusive
+    # .. maybe something better? regex-y? 
 }
 
-struct YourObject {
+message InsertResponse{
+    oneof reponse {
+        bool OK = 1
+        YourObjectWrapper yourObject = 2 # ... returns YourObject when it fails (ID is already taken)
+    }
+}
+
+message YourObjectMessage {
+    required Id id = 1
+    #client side:
+    required YourObject yourObject = 2
+    #server side:
+    required bytes yourObject = 2
+}
+
+# this is not present on the server side
+message YourObject {
     # ... whatever you want to package using gRPC protobuf 
 }
 ```
