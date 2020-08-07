@@ -70,20 +70,26 @@ Indexing is fully on key level of you need secondary indexes you needed to maint
 
 ### Implementation
 I know very little about file systems and B/R-trees, and how to implement such a thing.  So I will stick to a simple folder structure.
+
  With configurable folder name length `SHARD_CHAR_LENGHT`
- and number of folder levels, `SHARD_LEVEL`.
+ and number of folder levels, `SHARD_LEVEL`; 
 This way you key could shard on year/month/day, by:
-`SHARD_CHAR_LENGHT=2`, `SHARD_LEVEL=3`, placing an
-a bytes object  with key `YYMMDDrestofmyID` in folder structure:
+`SHARD_CHAR_LENGHT=2`, `SHARD_LEVEL=3`, placing
+a `bytes` object  with key `YYMMDDrestofmyID` in folder structure:
 `YY/MM/DD/restofmyID`.
 
 ## Caching
-The application will cache successful fetch, and - as well as failing
+The application will cache successful fetch, and successful as well as failing
  insert request file inodes.
-This is especially important for failing inserts where an impending `Delete` operation is waiting.
-As well as for `Fetch` operations where data is typically queried multiple times or at least a `Fetch` implies importance.
-Caching will probably be handled as a fixed length set of id, to inode pairs where items are popped(delete) and/or re(fetch)-inserted(insert) in the beginning of the set; the last item goes.
+
+ie.
+- failing inserts with an impending `Delete` operation
+- multiply called similar `Fetch` operations
+- a `Fetch` implies importance on the data-point.
+
+Caching will probably be handled as a fixed length set of id, to inode pairs where items are popped(delete) and/or (re)inserted(fetch/insert) in the beginning of the set; the last item goes.
 
 ### Caching ideas
-Should Implement/ as configuration? Cache the full shard inodes? (Combat Hot shards, fx most recent data)
+Should Implement/as configuration? Cache the full shard inodes? (Combat Hot shards, fx most recent data)
 
+TODO is Caching only needed because I don't properly implement a B-tree, complicating this project,  when I should be focusing on the data... the API is the boss! Implementation may, and will change!
