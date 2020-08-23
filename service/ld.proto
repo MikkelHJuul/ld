@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+option go_package = "https://github.com/MikkelHJuul/ld";
+
+package service;
+
+service ld {
+    //// read
+    rpc Fetch(Key) returns (KVObject);
+    rpc FetchMany(stream Key) returns (stream KVObject);
+    rpc FetchRange(KeyRange) returns (stream KVObject);
+
+    //// Delete
+    rpc Delete(Key) returns (KVObject);
+    rpc DeleteMany(stream Key) returns (stream KVObject);
+    rpc DeleteRange(KeyRange) returns (stream KVObject);
+
+    //// Create
+    rpc Insert(KVObject) returns (InsertResponse);
+    rpc InsertMany(stream KVObject) returns (stream InsertResponse);
+}
+
+message KeyRange {
+    string pattern = 1;  // unix style POSIX regex or RE2 tbd https://github.com/google/re2/wiki/Syntax
+    string from = 2;
+    string to = 3;  // inclusive (required for discrete systems with discrete queries)
+}
+
+message InsertResponse {
+    bool OK = 1;  // false implies ID-clash
+}
+
+message Key {
+    string key = 1;  // [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  // https://tools.ietf.org/html/rfc3986//section-2.3
+}
+
+message KVObject {
+    Key key = 1;
+    bytes value = 2;
+}
+
+// this is not present on the server side
+//message YourObject {
+//     ... whatever you want to package using gRPC protobuf
+//}
