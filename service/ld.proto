@@ -6,18 +6,18 @@ package service;
 
 service ld {
     //// read
-    rpc Fetch(Key) returns (KVObject);
-    rpc FetchMany(stream Key) returns (stream KVObject);
-    rpc FetchRange(KeyRange) returns (stream KVObject);
+    rpc Fetch(Key) returns (KeyValue);
+    rpc FetchMany(stream Key) returns (stream KeyValue);
+    rpc FetchRange(KeyRange) returns (stream KeyValue);
 
     //// Delete
-    rpc Delete(Key) returns (KVObject);
-    rpc DeleteMany(stream Key) returns (stream KVObject);
-    rpc DeleteRange(KeyRange) returns (stream KVObject);
+    rpc Delete(Key) returns (KeyValue);
+    rpc DeleteMany(stream Key) returns (stream KeyValue);
+    rpc DeleteRange(KeyRange) returns (stream KeyValue);
 
     //// Create
-    rpc Insert(KVObject) returns (InsertResponse);
-    rpc InsertMany(stream KVObject) returns (stream InsertResponse);
+    rpc Insert(KeyValue) returns (InsertResponse);
+    rpc InsertMany(stream KeyValue) returns (stream InsertResponse);
 }
 
 message KeyRange {
@@ -34,7 +34,7 @@ message Key {
     string key = 1;  // [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  // https://tools.ietf.org/html/rfc3986//section-2.3
 }
 
-message KVObject {
+message KeyValue {
     Key key = 1;
     bytes value = 2;
 }
