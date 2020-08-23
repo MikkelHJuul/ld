@@ -14,51 +14,39 @@ I will not support other ways of downloading.  (Just extract it from the docker 
 ```proto
 service ld {
     ## read
-    rpc Fetch(Id) returns (YourObjectMessage) 
-    rpc FetchMany(stream Id) returns (stream YourObjectMessage) 
-    rpc FetchRange(IdRange) returns (stream YourObjectMessage)
+    rpc Fetch(StringValue) returns (Any) 
+    rpc FetchMany(stream StringValue) returns (stream Any) 
+    rpc FetchRange(IdRange) returns (stream Any)
     
     ## Delete 
-    rpc Delete(Id) returns (YourObjectMessage) 
-    rpc DeleteMany(stream Id) returns (stream YourObjectMessage) 
-    rpc DeleteRange(IdRange) returns (stream YourObjectMessage)
+    rpc Delete(StringValue) returns (Any) 
+    rpc DeleteMany(stream StringValue) returns (stream Any) 
+    rpc DeleteRange(IdRange) returns (stream Any)
     
     ## Create
-    rpc Insert(YourObjectMessage) returns (InsertResponse)
-    rpc InsertMany(stream YourObjectMessage) return (stream InsertResponse)  
-}
-
-message Id {
-    required string id = 1  # hex? At least file-compliant, TODO determine compliance
-    # max length?
+    rpc Insert(InsertObject) returns (InsertResponse)
+    rpc InsertMany(stream InsertObject) return (stream InsertResponse)  
 }
 
 message IdRange {
-    optional Id from = 1   
-    optional Id to = 2  # inclusive (required for discrete systems with discrete queries)
-    # .. maybe something better? regex-y? 
-    # does nothing imply all?
+    optional string pattern = 1  # unix style POSIX regex
+    optional string from = 2
+    optional string to = 3  # inclusive (required for discrete systems with discrete queries)
 }
 
-message InsertResponse{
-    oneof reponse {
-        bool OK = 1
-        YourObjectWrapper yourObject = 2 # ... returns YourObject when it fails (ID is already taken)
-    }
+message InsertResponse {
+    bool OK = 1  # false implies ID-clash
 }
 
-message YourObjectMessage {
-    required Id id = 1
-    #server side:
-    required bytes yourObject = 2
-    #client side:
-    required YourObject yourObject = 2
+message InsertObject {
+    required string id = 1  # [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  # https://tools.ietf.org/html/rfc3986#section-2.3
+    required Any value = 2
 }
 
 # this is not present on the server side
-message YourObject {
-    # ... whatever you want to package using gRPC protobuf 
-}
+#message YourObject {
+#     ... whatever you want to package using gRPC protobuf 
+#}
 ```
 - implementing upsert or InsertOrReplace functionality is up to a wrapping client-layer.
 - implementing cross-server-replication (for clusters etc.) is up to a wrapping client-layer.
@@ -69,7 +57,7 @@ message YourObject {
 Indexing is fully on key level of you need secondary indexes you needed to maintain two version's of the data or actually create the index (id-id) table yourself.
 
 ### Implementation
-I know very little about file systems and B/R-trees, and how to implement such a thing.  So I will stick to a simple folder structure.
+I know very little about file systems and B/R-trees, and how to implement such a thing.  So I will stick to a simple folder structure. (and just use the file-system B+-tree.)
 
  With configurable folder name length `SHARD_CHAR_LENGHT`
  and number of folder levels, `SHARD_LEVEL`; 
