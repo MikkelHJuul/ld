@@ -4,19 +4,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/MikkelHJuul/ld/data"
 	pb "github.com/MikkelHJuul/ld/service"
-	"google.golang.org/genproto/googleapis/ads/googleads/v4/errors"
 	"google.golang.org/grpc"
 	"io"
-	"ldb/data"
 	"log"
 	"net"
 	"os"
 	"strconv"
 )
-
+var prefix = lookupEnvOrString("LD_PREFIX", "")
 var (
-	prefix = flag.String("prefix", lookupEnvOrString("LD_PREFIX", ""), "use prefix for environment variables, remember '_'; default is empty string")
 	port   = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
 
 	storeType = flag.String("service-type", lookupEnvOrString("SERVICE_TYPE", "FS"), "the values FS or MEM, referring to file-based storage or in-memory storage")
@@ -30,14 +28,14 @@ var (
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
-	if val, ok := os.LookupEnv(*prefix + key); ok {
+	if val, ok := os.LookupEnv(prefix + key); ok {
 		return val
 	}
 	return defaultVal
 }
 
 func lookupEnvOrInt(key string, defaultVal int) int {
-	if val, ok := os.LookupEnv(*prefix + key); ok {
+	if val, ok := os.LookupEnv(prefix + key); ok {
 		v, err := strconv.Atoi(val)
 		if err != nil {
 			log.Fatalf("LookupEnvOrInt[%s]: %v", key, err)
@@ -56,7 +54,9 @@ func main() {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterLdServer(grpcServer, newServer())
-	grpcServer.Serve(lis)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Server exited with error: %v", err)
+	}
 }
 
 type ldService struct {
@@ -99,9 +99,7 @@ func (lds ldService) handleMany(stream pb.Ld_FetchManyServer, method func(ctx co
 				return err
 			}
 		}
-		if err := stream.Send(keyValue); err != nil {
-			return err
-		}
+		return stream.Send(keyValue)
 	}
 }
 
@@ -109,8 +107,30 @@ func (lds ldService) FetchMany(stream pb.Ld_FetchManyServer) error {
 	return lds.handleMany(stream, lds.Fetch)
 }
 
+func (lds ldService) handleRange(method func(rng ...string) error, rng *pb.KeyRange) error {
+	var ran []string
+	if rng.Pattern != "" {
+		ran = []string{rng.Pattern}
+	} else {
+		if rng.From != "" {
+			ran = append(ran, rng.From)
+		}
+		if rng.To != "" {
+			ran = append(ran, rng.To)
+		}
+	}
+
+	return method(ran...)
+}
+
 func (lds ldService) FetchRange(rng *pb.KeyRange, stream pb.Ld_FetchRangeServer) error {
-	return nil
+	methodToApply := func(rng ...string) error {
+		return lds.service.GetRange(
+			func(key string, bytes []byte) error {
+				return stream.Send(&pb.KeyValue{Key: &pb.Key{Key: key}, Value: bytes})
+			}, rng...)
+	}
+	return lds.handleRange(methodToApply, rng)
 }
 
 func (lds ldService) Delete(ctx context.Context, key *pb.Key) (*pb.KeyValue, error) {
@@ -129,28 +149,13 @@ func (lds ldService) DeleteMany(stream pb.Ld_DeleteManyServer) error {
 }
 
 func (lds ldService) DeleteRange(rng *pb.KeyRange, stream pb.Ld_DeleteRangeServer) error {
-	var ran []string
-	if rng.Pattern != "" {
-		ran = []string{rng.Pattern}
-	} else {
-		if rng.From != "" {
-			_ = append(ran, rng.From)
-		}
-		if rng.To != "" {
-			_ = append(ran, rng.To)
-		}
+	methodToApply := func(rng ...string) error {
+		return lds.service.DeleteRange(
+			func(key string, bytes []byte) error {
+				return stream.Send(&pb.KeyValue{Key: &pb.Key{Key: key}, Value: bytes})
+			}, rng...)
 	}
-
-	if err := lds.service.DeleteRange(
-		func(key string, bytes []byte) error {
-			if err := stream.Send(&pb.KeyValue{Key: &pb.Key{Key: key}, Value: bytes}); err != nil {
-				return err
-			}
-			return nil
-		},
-		ran...); err != nil {
-		return err
-	}
+	return lds.handleRange(methodToApply, rng)
 }
 
 func (lds ldService) Insert(ctx context.Context, key *pb.KeyValue) (*pb.InsertResponse, error) {
