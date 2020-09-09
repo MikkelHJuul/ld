@@ -13,7 +13,6 @@ import (
 	"os"
 	"strconv"
 )
-var prefix = lookupEnvOrString("LD_PREFIX", "")
 var (
 	port   = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
 
@@ -28,14 +27,14 @@ var (
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
-	if val, ok := os.LookupEnv(prefix + key); ok {
+	if val, ok := os.LookupEnv(key); ok {
 		return val
 	}
 	return defaultVal
 }
 
 func lookupEnvOrInt(key string, defaultVal int) int {
-	if val, ok := os.LookupEnv(prefix + key); ok {
+	if val, ok := os.LookupEnv(key); ok {
 		v, err := strconv.Atoi(val)
 		if err != nil {
 			log.Fatalf("LookupEnvOrInt[%s]: %v", key, err)
