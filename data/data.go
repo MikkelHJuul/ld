@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 )
-
+// TODO consider design of deference, possibly use goroutines? whichever is fastest and less error prone
 type Service interface {
 	Delete(key string) ([]byte, error)
 	Get(key string) ([]byte, error)
@@ -165,16 +165,19 @@ func NewFileService(shardLen int, shardLevel int, rootPath string, maxMemSize in
 	}
 }
 
-func (fs FileService) determinePath(key string) string {
-	keys := []string{key}
-	for i := 0; i <= fs.shardLevel; i++ {
-		keys = strings.SplitN(keys[i], "", fs.shardCharLen)
+func (fs FileService) determinePath(key string) (string, string) {
+	var keys []string
+	for i := 0; i < fs.shardLevel; i++ {
+		keyslice := []byte(key)
+		keys = append(keys, string(keyslice[0:fs.shardCharLen]))
+		key = string(keyslice[fs.shardCharLen:])
 	}
-	return fs.rootPath + "/" + strings.Join(keys, "/")
+	folderPath := fs.rootPath + "/" + strings.Join(keys, "/")
+	return folderPath, folderPath + "/" + key
 }
 
 func (fs FileService) Delete(key string) ([]byte, error) {
-	path := fs.determinePath(key)
+	_, path := fs.determinePath(key)
 	defer func() {
 		_ = os.Remove(path)
 	}()
@@ -188,7 +191,7 @@ func (fs FileService) Get(key string) ([]byte, error) {
 	if item, _ := fs.memCache.Get(key); item != nil {
 		return item, nil
 	}
-	path := fs.determinePath(key)
+	_, path := fs.determinePath(key)
 	return ioutil.ReadFile(path)
 }
 
@@ -196,44 +199,74 @@ func (fs FileService) Save(key string, bytes []byte) error {
 	if err := fs.memCache.Save(key, bytes); err != nil {
 		return err
 	}
-	path := fs.determinePath(key)
+	folderPath, path := fs.determinePath(key)
+	err := os.MkdirAll(folderPath, os.FileMode(0770))
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(path, bytes, os.FileMode(0770)) // read write
 }
 
 func (fs FileService) handleRange(streamMethod func(path string) error, input []string) error {
-	var matchMethod func(path string, f os.FileInfo, err error) error
+//TODO test if skipDir works properly also partial compile of matcher, for faster exclusion??
+	doStreamFile := func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		} else {
+			return streamMethod(path)
+		}
+	}
+	var matchMethod func(path string) bool
+	var excludeCheck func(path string) bool
 	if len(input) == 1 {
 		// assume regexp
 		matcher, err := regexp.Compile(input[0])
 		if err != nil {
 			return err
 		}
-		matchMethod = func(path string, f os.FileInfo, err error) error {
-			if f.IsDir() { // fast before further calculations
-				return nil
-				// TODO: use Error::SkipDir with a pointer to make the first hit stream the dir, and the subsequent hits return Error::skipDir
-			}
-			if matcher.MatchString(fs.extrapolateKey(path)) {
-				if err := streamMethod(path); err != nil {
-					return err
-				}
-			}
-			return nil
+		matchMethod = func(path string) bool {
+			return matcher.MatchString(fs.extrapolateKey(path))
+		}
+		excludeCheck = func(path string) bool {
+			//cannot determine (people can use very complex regex's...)
+			return false
 		}
 	} else if len(input) == 2 {
-		from := fs.determinePath(input[0])
-		to := fs.determinePath(input[1])
-		matchMethod =  func(path string, f os.FileInfo, err error) error {
-			if f.IsDir() {
-				return nil
+		_, from := fs.determinePath(input[0])
+		_, to := fs.determinePath(input[1])
+		matchMethod = func(path string) bool {
+			return path >= from && path <= to
+		}
+		excludeCheck = func(path string) bool {
+			shardTot := fs.shardCharLen * fs.shardLevel
+			if len(from) <= shardTot && len(from) <= shardTot {
+				return true
 			}
-			if path >= from && path <= to {
-				return streamMethod(path)
+			if path >= string([]byte(from)[0:shardTot]) && path <= string([]byte(to)[0:shardTot]) {
+				// there are no items in here that matches
+				return true
 			}
-			return nil
+			return false
 		}
 	}
-	return filepath.Walk(fs.rootPath, matchMethod)
+	walkMethod := func(path string, f os.FileInfo, err error) error {
+		if f.IsDir() {
+			if matchMethod(path) {
+				err := filepath.Walk(path, doStreamFile); if err != nil {
+					return err
+				}
+				return filepath.SkipDir
+			}
+			if excludeCheck(path) {
+				return filepath.SkipDir
+			}
+		}
+		if matchMethod(path) {
+			return streamMethod(path)
+		}
+		return nil
+	}
+	return filepath.Walk(fs.rootPath, walkMethod)
 }
 
 func (fs FileService) DeleteRange(streamTo func(key string, bytes []byte) error, input ...string) error {
