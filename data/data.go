@@ -239,7 +239,7 @@ func (fs FileService) handleRange(streamMethod func(path string) error, input []
 		}
 		excludeCheck = func(path string) bool {
 			shardTot := fs.shardCharLen * fs.shardLevel
-			if len(from) <= shardTot && len(from) <= shardTot {
+			if len(from) <= shardTot && len(to) <= shardTot {
 				return true
 			}
 			if path >= string([]byte(from)[0:shardTot]) && path <= string([]byte(to)[0:shardTot]) {
