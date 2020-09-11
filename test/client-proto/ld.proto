@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/MikkelHJuul/ld/service";
+option go_package = "github.com/MikkelHJuul/ld/test/client-proto";
 
 package service;
 
@@ -36,10 +36,15 @@ message Key {
 
 message KeyValue {
     Key key = 1;
-    bytes value = 2;
+    YourObject value = 2;
 }
 
-// this is not present on the server side
-//message YourObject {
-//     ... whatever you want to package using gRPC protobuf
-//}
+message YourObject {
+     John john = 1;
+     John johnsApprentice = 2;
+}
+
+message John {
+    string name = 1;
+    string occupation = 2;
+}
