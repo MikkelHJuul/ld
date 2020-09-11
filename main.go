@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/MikkelHJuul/ld/data"
+	pb "github.com/MikkelHJuul/ld/service"
+
 	"context"
 	"flag"
 	"fmt"
-	"github.com/MikkelHJuul/ld/data"
-	pb "github.com/MikkelHJuul/ld/service"
 	"google.golang.org/grpc"
 	"io"
 	"log"
@@ -13,6 +14,10 @@ import (
 	"os"
 	"strconv"
 )
+
+//TODO Remove flag (package is a bit bloatet, use only Environment variables)
+//TODO Reduce footprint, by removing log
+// TODO possibly remove strconv-atoi
 var (
 	port   = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
 
