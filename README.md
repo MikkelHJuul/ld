@@ -65,6 +65,9 @@ message KeyValue {
 - implementing this, as a message-queue is up to a client (but it's easy, since delete returns the object - if one to many queuing is not that important)
 - adding user security or tls is up to a proxy layer
 
+
+see [test](test) for implementations
+
 ##Configuration
 via flags or environment variables:
 ```text
