@@ -9,17 +9,13 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"io"
-	"log"
 	"net"
 	"os"
 	"strconv"
 )
 
-//TODO Remove flag (package is a bit bloatet, use only Environment variables)
-//TODO Reduce footprint, by removing log
-// TODO possibly remove strconv-atoi
 var (
-	port   = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
+	port = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
 
 	storeType = flag.String("service-type", lookupEnvOrString("SERVICE_TYPE", "FS"), "the values FS or MEM, referring to file-based storage or in-memory storage")
 
@@ -42,7 +38,8 @@ func lookupEnvOrInt(key string, defaultVal int) int {
 	if val, ok := os.LookupEnv(key); ok {
 		v, err := strconv.Atoi(val)
 		if err != nil {
-			log.Fatalf("LookupEnvOrInt[%s]: %v", key, err)
+			_ = fmt.Errorf("LookupEnvOrInt[%s]: %v", key, err)
+			os.Exit(1)
 		}
 		return v
 	}
@@ -53,13 +50,15 @@ func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		_ = fmt.Errorf("failed to listen: %v", err)
+		os.Exit(1)
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterLdServer(grpcServer, newServer())
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Server exited with error: %v", err)
+		_ = fmt.Errorf("server exited with error: %v", err)
+		os.Exit(1)
 	}
 }
 
@@ -67,7 +66,7 @@ type ldService struct {
 	service data.Service
 }
 
-func newServer() *ldService { // pointers, which should I do??
+func newServer() *ldService {
 	var service data.Service
 	if *storeType == "MEM" {
 		service = data.NewCacheService(*memSize)
@@ -162,8 +161,8 @@ func (lds ldService) DeleteRange(rng *pb.KeyRange, stream pb.Ld_DeleteRangeServe
 	return lds.handleRange(methodToApply, rng)
 }
 
-func (lds ldService) Insert(ctx context.Context, key *pb.KeyValue) (*pb.InsertResponse, error) {
-	err := lds.service.Save(key.Key.Key, key.Value)
+func (lds ldService) Insert(ctx context.Context, keyValue *pb.KeyValue) (*pb.InsertResponse, error) {
+	err := lds.service.Save(keyValue.Key.Key, keyValue.Value)
 	if err != nil {
 		return &pb.InsertResponse{OK: false}, err
 	}
@@ -171,7 +170,7 @@ func (lds ldService) Insert(ctx context.Context, key *pb.KeyValue) (*pb.InsertRe
 }
 
 func (lds ldService) InsertMany(stream pb.Ld_InsertManyServer) error {
-	for { // duplicated-ish segment :(
+	for {
 		keyValue, err := stream.Recv()
 		if err == io.EOF {
 			return nil

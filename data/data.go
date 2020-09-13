@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 )
-// TODO consider design of deference, possibly use goroutines? whichever is fastest and less error prone
+
 type Service interface {
 	Delete(key string) ([]byte, error)
 	Get(key string) ([]byte, error)
@@ -97,31 +97,34 @@ func (cs CacheService) refresh(key string, bytes string) {
 }
 
 func (cs CacheService) handleRange(streamMethod func(key string, bytes []byte) error, input []string) error {
-	var matchMethod func(key string, value struct{string;uint}) error
+	var matchMethod func(key string, value struct {
+		string
+		uint
+	}) error
 	if len(input) == 1 {
 		// assume regexp
 		matcher, err := regexp.Compile(input[0])
 		if err != nil {
 			return err
 		}
-		matchMethod = func(key string, value struct{string;uint}) error {
-			if matcher.MatchString(key) {
-				return streamMethod(key, []byte(value.string))
-			}
-			return nil
-		}
+		matchMethod = func(key string, value struct {
+			string
+			uint
+		}) error { if matcher.MatchString(key) {
+			return streamMethod(key, []byte(value.string))
+		}; return nil }
 	} else if len(input) == 2 {
 		from := input[0]
 		to := input[1]
-		matchMethod =  func(key string, value struct{string;uint}) error {
-			if key >= from && key <= to {
-				return streamMethod(key, []byte(value.string))
-			}
-			return nil
-		}
+		matchMethod = func(key string, value struct {
+			string
+			uint
+		}) error { if key >= from && key <= to {
+			return streamMethod(key, []byte(value.string))
+		}; return nil }
 	}
-	for key,value := range cs.data {
-		if err := matchMethod(key, value); err != nil {  // https://github.com/golangci/golangci-lint/issues/510 ?? tror den, at cs.data er en nil-slice
+	for key, value := range cs.data {
+		if err := matchMethod(key, value); err != nil { // https://github.com/golangci/golangci-lint/issues/510 ?? tror den, at cs.data er en nil-slice
 			return err
 		}
 	}
@@ -132,14 +135,12 @@ func (cs CacheService) DeleteRange(streamTo func(key string, bytes []byte) error
 	return cs.handleRange(func(key string, bytes []byte) error {
 		defer delete(cs.data, key)
 		return streamTo(key, bytes)
-		}, input)
+	}, input)
 }
 
 func (cs CacheService) GetRange(streamTo func(key string, bytes []byte) error, input ...string) error {
 	return cs.handleRange(streamTo, input)
 }
-
-
 
 type FileService struct {
 	memCache     *CacheService
@@ -150,15 +151,7 @@ type FileService struct {
 
 func NewFileService(shardLen int, shardLevel int, rootPath string, maxMemSize int) *FileService {
 	return &FileService{
-		memCache: &CacheService{
-			deletePoint: 0,
-			current:     0,
-			maxSize:     maxMemSize,
-			data: make(map[string]struct {
-				string
-				uint
-			}),
-		},
+		memCache:     NewCacheService(maxMemSize),
 		shardCharLen: shardLen,
 		shardLevel:   shardLevel,
 		rootPath:     rootPath,
@@ -172,7 +165,12 @@ func (fs FileService) determinePath(key string) (string, string) {
 		keys = append(keys, string(keyslice[0:fs.shardCharLen]))
 		key = string(keyslice[fs.shardCharLen:])
 	}
-	folderPath := fs.rootPath + "/" + strings.Join(keys, "/")
+	var folderPath string
+	if len(keys) == 0 {
+		folderPath = fs.rootPath
+	} else {
+		folderPath = fs.rootPath + "/" + strings.Join(keys, "/")
+	}
 	return folderPath, folderPath + "/" + key
 }
 
@@ -208,7 +206,6 @@ func (fs FileService) Save(key string, bytes []byte) error {
 }
 
 func (fs FileService) handleRange(streamMethod func(path string) error, input []string) error {
-//TODO test if skipDir works properly also partial compile of matcher, for faster exclusion??
 	doStreamFile := func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -220,7 +217,8 @@ func (fs FileService) handleRange(streamMethod func(path string) error, input []
 	var excludeCheck func(path string) bool
 	if len(input) == 1 {
 		// assume regexp
-		matcher, err := regexp.Compile(input[0])
+		reg := input[0]
+		matcher, err := regexp.Compile(reg)
 		if err != nil {
 			return err
 		}
@@ -228,7 +226,11 @@ func (fs FileService) handleRange(streamMethod func(path string) error, input []
 			return matcher.MatchString(fs.extrapolateKey(path))
 		}
 		excludeCheck = func(path string) bool {
-			//cannot determine (people can use very complex regex's...)
+			if len(path) >= len(reg) && strings.Index(reg, "^") == 0 && strings.ContainsAny(reg, "*+") {
+				//path is longer then reg so you are not trying to match anything more specific
+				//reg starts with '^' and does not contain + or *
+				return true
+			}
 			return false
 		}
 	} else if len(input) == 2 {
@@ -252,7 +254,8 @@ func (fs FileService) handleRange(streamMethod func(path string) error, input []
 	walkMethod := func(path string, f os.FileInfo, err error) error {
 		if f.IsDir() {
 			if matchMethod(path) {
-				err := filepath.Walk(path, doStreamFile); if err != nil {
+				err := filepath.Walk(path, doStreamFile)
+				if err != nil {
 					return err
 				}
 				return filepath.SkipDir
@@ -270,7 +273,7 @@ func (fs FileService) handleRange(streamMethod func(path string) error, input []
 }
 
 func (fs FileService) DeleteRange(streamTo func(key string, bytes []byte) error, input ...string) error {
-	var returnMethod = func (path string) error {
+	var returnMethod = func(path string) error {
 		if resp, err := ioutil.ReadFile(path); err != nil {
 			return err
 		} else {
@@ -288,7 +291,7 @@ func (fs FileService) DeleteRange(streamTo func(key string, bytes []byte) error,
 }
 
 func (fs FileService) GetRange(streamTo func(key string, bytes []byte) error, input ...string) error {
-	var returnMethod = func (path string) error {
+	var returnMethod = func(path string) error {
 		if resp, err := ioutil.ReadFile(path); err != nil {
 			return err
 		} else {
@@ -299,5 +302,5 @@ func (fs FileService) GetRange(streamTo func(key string, bytes []byte) error, in
 }
 
 func (fs FileService) extrapolateKey(path string) string {
-	return strings.Replace(strings.Replace(path, fs.rootPath,"",1), "/","", fs.shardLevel + 1)
+	return strings.Replace(strings.Replace(path, fs.rootPath, "", 1), "/", "", fs.shardLevel+1)
 }

@@ -1,2 +1,5 @@
 - Mutex for in-mem cache
-- Algorithm for excluding folders regex starts with ^ and does not contain + nor *, and is shorter than path
+- consider design of deference in data-handling, possibly use goroutines? whichever is fastest and less error prone
+- consider possibility for larger datasets: use another data storage mechanism (for compression)
+- consider reducing the program size by removing packages: strconv and flag?
+- consider removing stuff from ld.pb.go?
