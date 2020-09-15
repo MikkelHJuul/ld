@@ -1,5 +1,5 @@
-- Mutex for in-mem cache
-- consider design of deference in data-handling, possibly use goroutines? whichever is fastest and less error prone
+- Mutex for in-mem cache ? channels?
+- consider design of deference in data-handling, possibly use goroutines? whichever is fastest and less error prone (channels???)
 - consider possibility for larger datasets: use another data storage mechanism (for compression)
 - consider reducing the program size by removing packages: strconv and flag?
 - consider removing stuff from ld.pb.go?
