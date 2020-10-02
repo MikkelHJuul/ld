@@ -1,5 +1,4 @@
-- Mutex for in-mem cache ? channels?
-- consider design of deference in data-handling, possibly use goroutines? whichever is fastest and less error prone (channels???)
-- consider possibility for larger datasets: use another data storage mechanism (for compression)
-- consider reducing the program size by removing packages: strconv and flag?
-- consider removing stuff from ld.pb.go?
+- channels for data finding
+- consider reducing the program size by removing package flag?
+- make sure a dataset can be reinitiated from the vmem-file from another session
+
