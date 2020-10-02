@@ -11,20 +11,16 @@ import (
 	"io"
 	"net"
 	"os"
-	"strconv"
 )
 
 var (
-	port = flag.Int("port", lookupEnvOrInt("PORT", 5326), "The server port, default 5326")
+	port = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
 
-	storeType = flag.String("service-type", lookupEnvOrString("SERVICE_TYPE", "FS"), "the values FS or MEM, referring to file-based storage or in-memory storage")
+	serviceType = flag.String("service-type", lookupEnvOrString("SERVICE_TYPE", "MMAP"), "the values MMAP or MEM, referring to mmap or completely in-memory storage")
 
-	fsShardLevel = flag.Int("fs-shard-level", lookupEnvOrInt("FS_SHARD_LEVEL", 3), "The length of the sharding hierarchy, default 3")
-	fsShardLen   = flag.Int("fs-shard-len", lookupEnvOrInt("FS_SHARD_LEN", 3), "how long the shard's length is, default 3")
-	fsMemSize    = flag.Int("fs-mem-size", lookupEnvOrInt("FS_MEM_SIZE", 1000), "The number of cached items in the file-system type service's memory-cache, default 1000")
-	fsRootPath   = flag.String("fs-root-path", lookupEnvOrString("FS_ROOT_PATH", "/data"), "the path where data is stored, default '/data'")
+	mmapFile = flag.String("mmap-file", lookupEnvOrString("MMAP_FILE", "/data/ld.dat"), "the path or file where data is stored, default '/data/ld.dat'")
 
-	memSize = flag.Int("mem-size", lookupEnvOrInt("MEM_SIZE", 100000), "The number of items to hold in memory, todo guide, default 100,000")
+	memSize = flag.String("mem-size", lookupEnvOrString("MEM_SIZE", "5G"), "The size of memory allowed to allocate (the data only)")
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
@@ -34,21 +30,9 @@ func lookupEnvOrString(key string, defaultVal string) string {
 	return defaultVal
 }
 
-func lookupEnvOrInt(key string, defaultVal int) int {
-	if val, ok := os.LookupEnv(key); ok {
-		v, err := strconv.Atoi(val)
-		if err != nil {
-			_ = fmt.Errorf("LookupEnvOrInt[%s]: %v", key, err)
-			os.Exit(1)
-		}
-		return v
-	}
-	return defaultVal
-}
-
 func main() {
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:" + *port))
 	if err != nil {
 		_ = fmt.Errorf("failed to listen: %v", err)
 		os.Exit(1)
@@ -68,12 +52,31 @@ type ldService struct {
 
 func newServer() *ldService {
 	var service data.Service
-	if *storeType == "MEM" {
+	var mmapFileName = *mmapFile
+	if *serviceType == "MEM" {
 		service = data.NewCacheService(*memSize)
 	} else {
-		service = data.NewFileService(*fsShardLen, *fsShardLevel, *fsRootPath, *fsMemSize)
+		if info := fileExists(*mmapFile); info != nil {
+			if info.IsDir() {
+				mmapFileName += "/ld.dat"
+			}
+		} else {
+			fmt.Println("file does not exist")
+			if mmapFileName[len(mmapFileName)-1:] == "/" {
+				mmapFileName += "ld.dat"
+			}
+		}
+		service = data.NewMMapService(mmapFileName)
 	}
 	return &ldService{service: service}
+}
+
+func fileExists(filename string) os.FileInfo {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return info
 }
 
 func (lds ldService) Fetch(ctx context.Context, key *pb.Key) (*pb.KeyValue, error) {

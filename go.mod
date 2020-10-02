@@ -3,6 +3,7 @@ module github.com/MikkelHJuul/ld
 go 1.14
 
 require (
+	github.com/edsrzf/mmap-go v1.0.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.2 // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
