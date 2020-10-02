@@ -60,50 +60,32 @@ message KeyValue {
 #}
 ```
 - implementing upsert or InsertOrReplace functionality is up to a wrapping client-layer.
-- implementing cross-server-replication (for clusters etc.) is up to a wrapping client-layer.
-- implementing shard-splitting is up to a client-layer.
-- implementing this, as a message-queue is up to a client (but it's easy, since delete returns the object - if one to many queuing is not that important)
+- implementing cross-server-replication (for clusters etc.) is up to a wrapping client-server-layer.
+- implementing shard-splitting is up to a client-server-layer.
+- implementing this, as a message-queue is up to a client (but it's easy, since delete returns the object - if one to many queuing is not that important and transactions and replication etc.)
 - adding user security or tls is up to a proxy layer
 
 
-see [test](test) for implementations
+see [test](test) for client implementations
 
 ##Configuration
 via flags or environment variables:
 ```text
 flag            ENV             default     description
-port            PORT            5326        -
-service-type    SERVICE_TYPE    FS          FS use files or MEM in-memory DB
-fs-shard-level  FS_SHARD_LEVEL  3           requires service-type FS: how many levels of folders to put files in
-fs-shard-len    FS_SHARD_LEN    3           requires service-type FS: length of folder names
-fs-mem-size     FS_MEM_SIZE     1000        requires service-type FS: how many items to cache in memory
-fs-root-path    FS_ROOT_PATH    /data       requires service-type FS: where to put data
-mem-size        MEM_SIZE        100000      requires service-type MEM: how many items to hold in memory
+------------------------------------------------------------------------------------
+port            PORT            5326        "5326" spells out "lean" in T9 keyboards
+service-type    SERVICE_TYPE    FS          MMAP use virtual memory or MEM in-memory DB
+mmap-file       MMAP_FILE       /data       requires service-type MMAP: where to put data, file or folder
+mem-size        MEM_SIZE        5G          requires service-type MEM: how much memory to occupy for data in memory
 ```
 
 ## Keys
-The database operate only on `key`-level if you need secondary indexes you needed to maintain two version's of the data or actually create the index (`id`-`id`-mapping) table yourself.
+The database operate only on `key`-level if you need secondary indexes you needed to maintain two version's of the data or actually create the index (`id'`-`id`-mapping) table yourself.
 
-There is no Query language to clutter your code!
+There is no Query language to clutter your code! I know, awesome, right?!
 
-### Implementation
-I know very little about file systems and B/R-trees, and how to implement such a thing.  So I will stick to a simple folder structure. (and just use the file-system B+-tree.)
+## Inmemory reinsertion
+The application will reinsert successful fetch data (otherwise it may be removed because of cache clean up).
 
-With configurable folder name length `SHARD_CHAR_LEN`
- and number of folder levels, `SHARD_LEVEL`; 
-This way you key could shard on year/month/day, by:
-`SHARD_CHAR_LEN=2`, `SHARD_LEVEL=3`, placing
-a `bytes` object  with key `YYMMDDrestofmyID` in folder structure:
-`some/root/YY/MM/DD/restofmyID`.
-
-## Caching
-The application will cache successful fetch, and successful as well as failing
- insert requests.
-
-ie.
-- failing inserts with an impending `Delete` operation
-- multiple-called similar `Fetch` operations
-- a `Fetch` implies importance on the data-point.
-
-Caching is done as a fixed length `map[string]struct{string, uint}` where the string is the value, and the `uint` is a scanning number to handle which item should be deleted.
-
+## Virtual memory
+I make use of `syscall.Mmap(...)`
