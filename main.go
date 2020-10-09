@@ -18,7 +18,7 @@ var (
 
 	serviceType = flag.String("service-type", lookupEnvOrString("SERVICE_TYPE", "MMAP"), "the values MMAP or MEM, referring to mmap or completely in-memory storage")
 
-	mmapFile = flag.String("mmap-file", lookupEnvOrString("MMAP_FILE", "/data/ld.dat"), "the path or file where data is stored, default '/data/ld.dat'")
+	mmapFolder = flag.String("mmap-folder", lookupEnvOrString("MMAP_FILE", "data/"), "the path or file where data is stored, default '/data'")
 
 	memSize = flag.String("mem-size", lookupEnvOrString("MEM_SIZE", "5G"), "The size of memory allowed to allocate (the data only)")
 )
@@ -32,7 +32,7 @@ func lookupEnvOrString(key string, defaultVal string) string {
 
 func main() {
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:" + *port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:"+*port))
 	if err != nil {
 		_ = fmt.Errorf("failed to listen: %v", err)
 		os.Exit(1)
@@ -52,21 +52,10 @@ type ldService struct {
 
 func newServer() *ldService {
 	var service data.Service
-	var mmapFileName = *mmapFile
 	if *serviceType == "MEM" {
 		service = data.NewCacheService(*memSize)
 	} else {
-		if info := fileExists(*mmapFile); info != nil {
-			if info.IsDir() {
-				mmapFileName += "/ld.dat"
-			}
-		} else {
-			fmt.Println("file does not exist")
-			if mmapFileName[len(mmapFileName)-1:] == "/" {
-				mmapFileName += "ld.dat"
-			}
-		}
-		service = data.NewMMapService(mmapFileName)
+		service = data.NewMMapService(mmapFolder)
 	}
 	return &ldService{service: service}
 }
