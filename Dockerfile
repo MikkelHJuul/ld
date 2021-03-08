@@ -11,7 +11,7 @@ RUN go build -o ld .
 
 FROM scratch
 COPY --from=builder /build/ld /
-COPY --from=builder /service/ld.proto /ld.proto
+COPY --from=builder /proto/ld.proto /ld.proto
 ENV PORT 5326
 EXPOSE 5326
 ENTRYPOINT ["/ld"]

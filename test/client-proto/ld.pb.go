@@ -360,7 +360,7 @@ type LdClient interface {
 	Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	DeleteMany(ctx context.Context, opts ...grpc.CallOption) (Ld_DeleteManyClient, error)
 	DeleteRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_DeleteRangeClient, error)
-	//// Create
+	//// Read
 	Insert(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*InsertResponse, error)
 	InsertMany(ctx context.Context, opts ...grpc.CallOption) (Ld_InsertManyClient, error)
 }
@@ -567,7 +567,7 @@ type LdServer interface {
 	Delete(context.Context, *Key) (*KeyValue, error)
 	DeleteMany(Ld_DeleteManyServer) error
 	DeleteRange(*KeyRange, Ld_DeleteRangeServer) error
-	//// Create
+	//// Read
 	Insert(context.Context, *KeyValue) (*InsertResponse, error)
 	InsertMany(Ld_InsertManyServer) error
 }
