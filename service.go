@@ -139,8 +139,9 @@ func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
+		iter := possiblyPrefixIterator(it, keyRange.Prefix)
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			item := iter.Item()
 			k := item.Key()
 			if keyRangeW.Match(string(k)) {
 				chMatches <- k
@@ -293,8 +294,9 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
+		iter := possiblyPrefixIterator(it, keyRange.Prefix)
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			item := iter.Item()
 			k := item.Key()
 			if keyRangeW.Match(string(k)) {
 				chMatches <- k
@@ -340,6 +342,33 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		return err
 	}
 	return nil
+}
+
+type seekValid interface {
+	Rewind()
+	Valid() bool
+	Next()
+	Item() *badger.Item
+}
+
+type badgerPrefixIterator struct {
+	*badger.Iterator
+	prefix []byte
+}
+
+func (b badgerPrefixIterator) Rewind() {
+	b.Seek(b.prefix)
+}
+
+func (b badgerPrefixIterator) Valid() bool {
+	return b.ValidForPrefix(b.prefix)
+}
+
+func possiblyPrefixIterator(it *badger.Iterator, prefix string) seekValid {
+	if prefix != "" {
+		return &badgerPrefixIterator{it, []byte(prefix)}
+	}
+	return it
 }
 
 type keyRangeWrapper struct {
