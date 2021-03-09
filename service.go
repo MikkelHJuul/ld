@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"google.golang.org/appengine/log"
 	"io"
+	"log"
+	"regexp"
 
 	pb "github.com/MikkelHJuul/ld/proto"
 
@@ -28,7 +29,7 @@ func (l ldService) Create(ctx context.Context, value *pb.KeyValue) (*pb.CreateRe
 		return err
 	})
 	if err != nil {
-		log.Warningf(ctx, "error while saving data to database ", err)
+		log.Printf("error while saving data to database: %v ", err)
 		return &pb.CreateResponse{Error: true}, err
 	}
 	return &pb.CreateResponse{}, nil
@@ -68,7 +69,7 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 	return nil
 }
 
-func (l ldService) Read(ctx context.Context, key *pb.Key) (*pb.KeyValue, error) {
+func (l ldService) Read(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
 	err := l.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key.Key))
@@ -79,7 +80,7 @@ func (l ldService) Read(ctx context.Context, key *pb.Key) (*pb.KeyValue, error) 
 		return err
 	})
 	if err != nil {
-		log.Warningf(ctx, "error while fetching data from database ", err)
+		log.Printf("error while fetching data from database: %v", err)
 		return nil, err
 	}
 	return &pb.KeyValue{Key: key.Key, Value: value}, nil
@@ -128,7 +129,54 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 }
 
 func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer) error {
-	panic("implement me using badger stream")
+	keyRangeW, err := newKeyRangeWrapper(keyRange)
+	if err != nil {
+		return err
+	}
+	chMatches := make(chan []byte, 1000) // channel size?
+	go l.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			if keyRangeW.Match(string(k)) {
+				chMatches <- k
+			}
+		}
+		return nil
+	})
+	txn := l.db.NewTransaction(false)
+	defer txn.Discard()
+	for key := range chMatches {
+		item, err := txn.Get(key)
+		if err == badger.ErrTxnTooBig {
+			if err = txn.Commit(); err != nil {
+				return err
+			}
+			txn = l.db.NewTransaction(false)
+			item, err = txn.Get(key)
+			if err != nil {
+				return err
+			}
+		}
+		if item != nil {
+			itemVal, err := item.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
+				return err
+			}
+		}
+	}
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l ldService) Update(ctx context.Context, value *pb.KeyValue) (*pb.KeyValue, error) {
@@ -146,7 +194,7 @@ func (l ldService) Update(ctx context.Context, value *pb.KeyValue) (*pb.KeyValue
 		return err
 	})
 	if err != nil {
-		log.Warningf(ctx, "error while saving data to database ", err)
+		log.Printf("error while saving data to database: %v ", err)
 		return nil, err
 	}
 	return kv, nil
@@ -176,7 +224,7 @@ func (l ldService) UpdateMany(server pb.Ld_UpdateManyServer) error {
 			return err
 		})
 		if err != nil {
-			log.Warningf(server.Context(), "error while saving data to database ", err)
+			log.Printf("error while saving data to database: %v ", err)
 			return err
 		}
 		if err = server.Send(kv); err != nil {
@@ -195,7 +243,7 @@ func (l ldService) Delete(ctx context.Context, key *pb.Key) (*pb.KeyValue, error
 		return txn.Delete([]byte(key.Key))
 	})
 	if err != nil {
-		log.Warningf(ctx, "error while deleting data in database ", err)
+		log.Printf("error while deleting data in database: %v ", err)
 		return nil, err
 	}
 	return kv, nil
@@ -224,7 +272,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			return txn.Delete([]byte(key.Key))
 		})
 		if err != nil {
-			log.Warningf(server.Context(), "error while deleting data in database ", err)
+			log.Printf("error while deleting data in database: %v", err)
 			return err
 		}
 		if err = server.Send(kv); err != nil {
@@ -235,5 +283,97 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 }
 
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
-	panic("implement me using badger stream")
+	keyRangeW, err := newKeyRangeWrapper(keyRange)
+	if err != nil {
+		return err
+	}
+	chMatches := make(chan []byte, 1000) // channel size?
+	go l.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			if keyRangeW.Match(string(k)) {
+				chMatches <- k
+			}
+		}
+		return nil
+	})
+	txn := l.db.NewTransaction(true)
+	defer txn.Discard()
+	for key := range chMatches {
+		item, err := txn.Get(key)
+		if err == badger.ErrTxnTooBig {
+			if err = txn.Commit(); err != nil {
+				return err
+			}
+			txn = l.db.NewTransaction(true)
+			item, err = txn.Get(key)
+			if err != nil {
+				return err
+			}
+		}
+		if err := txn.Delete(key); err == badger.ErrTxnTooBig {
+			if err = txn.Commit(); err != nil {
+				return err
+			}
+			txn = l.db.NewTransaction(true)
+			if err = txn.Delete(key); err != nil {
+				return err
+			}
+		}
+		if item != nil {
+			itemVal, err := item.ValueCopy(nil)
+			if err != nil {
+				return err
+			}
+			if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
+				return err
+			}
+		}
+	}
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type keyRangeWrapper struct {
+	*pb.KeyRange
+	pattern *regexp.Regexp
+}
+
+func (krw keyRangeWrapper) Match(in string) bool {
+	if krw.From != "" {
+		if krw.From > in {
+			return false
+		}
+	}
+	if krw.To != "" {
+		if krw.To < in {
+			return false
+		}
+	}
+	if krw.pattern != nil {
+		if match := krw.pattern.MatchString(in); !match {
+			return false
+		}
+	}
+	return true
+}
+
+func newKeyRangeWrapper(keyRange *pb.KeyRange) (keyRangeWrapper, error) {
+	var pattern *regexp.Regexp
+	var err error
+	if keyRange.Pattern != "" {
+		pattern, err = regexp.Compile(keyRange.Pattern)
+		if err != nil {
+			return keyRangeWrapper{}, err
+		}
+	}
+	return keyRangeWrapper{KeyRange: keyRange, pattern: pattern}, nil
 }
