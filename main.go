@@ -13,7 +13,7 @@ import (
 var (
 	port = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
 
-	mem = flag.Bool("mem", func() bool { _, ok := os.LookupEnv("MEM"); return ok }(), "if the database is in-memory")
+	mem = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
