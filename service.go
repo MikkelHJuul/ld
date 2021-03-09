@@ -129,7 +129,7 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 }
 
 func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer) error {
-	keyRangeW, err := newKeyRangeWrapper(keyRange)
+	keyRangeW, err := NewKeyRangeWrapper(keyRange)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 }
 
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
-	keyRangeW, err := newKeyRangeWrapper(keyRange)
+	keyRangeW, err := NewKeyRangeWrapper(keyRange)
 	if err != nil {
 		return err
 	}
@@ -371,7 +371,7 @@ func possiblyPrefixIterator(it *badger.Iterator, prefix string) seekValid {
 	return it
 }
 
-type keyRangeWrapper struct {
+type KeyRangeWrapper struct {
 	*pb.KeyRange
 	pattern *regexp.Regexp
 }
@@ -395,14 +395,14 @@ func (krw keyRangeWrapper) Match(in string) bool {
 	return true
 }
 
-func newKeyRangeWrapper(keyRange *pb.KeyRange) (keyRangeWrapper, error) {
+func NewKeyRangeWrapper(keyRange *pb.KeyRange) (KeyRangeWrapper, error) {
 	var pattern *regexp.Regexp
 	var err error
 	if keyRange.Pattern != "" {
 		pattern, err = regexp.Compile(keyRange.Pattern)
 		if err != nil {
-			return keyRangeWrapper{}, err
+			return KeyRangeWrapper{}, err
 		}
 	}
-	return keyRangeWrapper{KeyRange: keyRange, pattern: pattern}, nil
+	return KeyRangeWrapper{KeyRange: keyRange, pattern: pattern}, nil
 }
