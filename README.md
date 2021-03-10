@@ -1,10 +1,11 @@
 # ld
 Lean database - it's a simple-database, it's just an `rpc`-based server with basic CRUD.
-which can ingest any `value` and store it at a `key`, it only support rpc, via `gRPC`. The encoded binary message 
+which can ingest any `value` and store it at a `key`, it only supports rpc, via `gRPC`. The encoded binary message 
 is stored, and served without touching the value on the server-side. To that end it is mostly a `gRPC`-cache, 
-but I intend it to be a more general building block;
+but I intend it to be a more general building block.
 
-The database operate only on `key`-level if you need secondary indexes you needed to maintain two version's of the data or actually create the index (`id'`-`id`-mapping) table yourself.
+The database is operating on "key"-level only. If you need secondary indexes you needed to maintain two versions of the data or actually create the index (`id'`-`id`-mapping) table yourself.
+Some key-value databases offer more solutions than this; this does not, and will not, offering too many solutions most often lead to poorer solutions in general.
 
 There is no Query language to clutter your code! I know, awesome, right?!
 
