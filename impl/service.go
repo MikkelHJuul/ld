@@ -1,6 +1,7 @@
-package main
+package impl
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log"
@@ -12,19 +13,19 @@ import (
 )
 
 type ldService struct {
-	db *badger.DB
+	*badger.DB
 }
 
-func newServer() *ldService {
-	db, err := badger.Open(badger.DefaultOptions("data/badger").WithInMemory(*mem))
+func NewServer(inmem bool) *ldService {
+	db, err := badger.Open(badger.DefaultOptions("data/badger").WithInMemory(inmem))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	return &ldService{db: db}
+	return &ldService{db}
 }
 
-func (l ldService) Create(ctx context.Context, value *pb.KeyValue) (*pb.CreateResponse, error) {
-	err := l.db.Update(func(txn *badger.Txn) error {
+func (l ldService) Create(_ context.Context, value *pb.KeyValue) (*pb.CreateResponse, error) {
+	err := l.DB.Update(func(txn *badger.Txn) error {
 		err := txn.Set([]byte(value.Key), value.Value)
 		return err
 	})
@@ -36,7 +37,7 @@ func (l ldService) Create(ctx context.Context, value *pb.KeyValue) (*pb.CreateRe
 }
 
 func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
-	txn := l.db.NewTransaction(true)
+	txn := l.DB.NewTransaction(true)
 	for {
 		create, err := server.Recv()
 		if err == io.EOF {
@@ -51,7 +52,7 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 			if err != nil {
 				return err //probably not?
 			}
-			txn = l.db.NewTransaction(true)
+			txn = l.DB.NewTransaction(true)
 			err = txn.Set([]byte(create.Key), create.Value)
 			if err != nil {
 				return err //probably not?
@@ -71,7 +72,7 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 
 func (l ldService) Read(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
-	err := l.db.View(func(txn *badger.Txn) error {
+	err := l.DB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key.Key))
 		if err != nil {
 			return err
@@ -87,7 +88,7 @@ func (l ldService) Read(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 }
 
 func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
-	txn := l.db.NewTransaction(false)
+	txn := l.DB.NewTransaction(false)
 	defer txn.Commit()
 	for {
 		key, err := server.Recv()
@@ -98,7 +99,7 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 			return err
 		}
 		var value []byte
-		if err := l.db.View(func(txn *badger.Txn) error {
+		if err := l.DB.View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(key.Key))
 			if err != nil {
 				return err
@@ -110,7 +111,7 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 			if err != nil {
 				return err //probably not?
 			}
-			txn = l.db.NewTransaction(false)
+			txn = l.DB.NewTransaction(false)
 			item, err := txn.Get([]byte(key.Key))
 			if err != nil {
 				return err //probably not?
@@ -129,27 +130,26 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 }
 
 func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer) error {
-	keyRangeW, err := NewKeyRangeWrapper(keyRange)
+	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
 		return err
 	}
 	chMatches := make(chan []byte, 1000) // channel size?
-	go l.db.View(func(txn *badger.Txn) error {
+	go l.DB.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		iter := possiblyPrefixIterator(it, keyRange.Prefix)
+		iter := keyRangeIterator(it, keyRange)
 		for iter.Rewind(); iter.Valid(); iter.Next() {
-			item := iter.Item()
-			k := item.Key()
-			if keyRangeW.Match(string(k)) {
+			k := iter.Item().Key()
+			if matcher.Match(k) {
 				chMatches <- k
 			}
 		}
 		return nil
 	})
-	txn := l.db.NewTransaction(false)
+	txn := l.DB.NewTransaction(false)
 	defer txn.Discard()
 	for key := range chMatches {
 		item, err := txn.Get(key)
@@ -157,7 +157,7 @@ func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer
 			if err = txn.Commit(); err != nil {
 				return err
 			}
-			txn = l.db.NewTransaction(false)
+			txn = l.DB.NewTransaction(false)
 			item, err = txn.Get(key)
 			if err != nil {
 				return err
@@ -182,7 +182,7 @@ func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer
 
 func (l ldService) Update(ctx context.Context, value *pb.KeyValue) (*pb.KeyValue, error) {
 	kv, err := l.Read(ctx, &pb.Key{Key: value.Key}) // prefer more read-operations
-	err = l.db.Update(func(txn *badger.Txn) error {
+	err = l.DB.Update(func(txn *badger.Txn) error {
 		if kv.Value != nil {
 			err := txn.Delete([]byte(value.Key))
 			if err != nil {
@@ -212,7 +212,7 @@ func (l ldService) UpdateMany(server pb.Ld_UpdateManyServer) error {
 		}
 
 		kv, err := l.Read(server.Context(), &pb.Key{Key: keyValue.Key}) // prefer more read-operations
-		err = l.db.Update(func(txn *badger.Txn) error {
+		err = l.DB.Update(func(txn *badger.Txn) error {
 			if kv.Value != nil {
 				err := txn.Delete([]byte(keyValue.Key))
 				if err != nil {
@@ -240,7 +240,7 @@ func (l ldService) Delete(ctx context.Context, key *pb.Key) (*pb.KeyValue, error
 	if err != nil || kv.Value == nil {
 		return nil, err
 	}
-	err = l.db.Update(func(txn *badger.Txn) error {
+	err = l.DB.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(key.Key))
 	})
 	if err != nil {
@@ -269,7 +269,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			}
 			continue
 		}
-		err = l.db.Update(func(txn *badger.Txn) error {
+		err = l.DB.Update(func(txn *badger.Txn) error {
 			return txn.Delete([]byte(key.Key))
 		})
 		if err != nil {
@@ -284,27 +284,26 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 }
 
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
-	keyRangeW, err := NewKeyRangeWrapper(keyRange)
+	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
 		return err
 	}
 	chMatches := make(chan []byte, 1000) // channel size?
-	go l.db.View(func(txn *badger.Txn) error {
+	go l.DB.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		iter := possiblyPrefixIterator(it, keyRange.Prefix)
+		iter := keyRangeIterator(it, keyRange)
 		for iter.Rewind(); iter.Valid(); iter.Next() {
-			item := iter.Item()
-			k := item.Key()
-			if keyRangeW.Match(string(k)) {
+			k := iter.Item().Key()
+			if matcher.Match(k) {
 				chMatches <- k
 			}
 		}
 		return nil
 	})
-	txn := l.db.NewTransaction(true)
+	txn := l.DB.NewTransaction(true)
 	defer txn.Discard()
 	for key := range chMatches {
 		item, err := txn.Get(key)
@@ -312,7 +311,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			if err = txn.Commit(); err != nil {
 				return err
 			}
-			txn = l.db.NewTransaction(true)
+			txn = l.DB.NewTransaction(true)
 			item, err = txn.Get(key)
 			if err != nil {
 				return err
@@ -322,7 +321,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			if err = txn.Commit(); err != nil {
 				return err
 			}
-			txn = l.db.NewTransaction(true)
+			txn = l.DB.NewTransaction(true)
 			if err = txn.Delete(key); err != nil {
 				return err
 			}
@@ -344,7 +343,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 	return nil
 }
 
-type seekValid interface {
+type Iterator interface {
 	Rewind()
 	Valid() bool
 	Next()
@@ -356,53 +355,56 @@ type badgerPrefixIterator struct {
 	prefix []byte
 }
 
-func (b badgerPrefixIterator) Rewind() {
+//prefix is used as from
+type badgerFromToIterator struct {
+	badgerPrefixIterator
+	to []byte
+}
+
+func (b *badgerPrefixIterator) Rewind() {
 	b.Seek(b.prefix)
 }
 
-func (b badgerPrefixIterator) Valid() bool {
+func (b *badgerPrefixIterator) Valid() bool {
 	return b.ValidForPrefix(b.prefix)
 }
 
-func possiblyPrefixIterator(it *badger.Iterator, prefix string) seekValid {
-	if prefix != "" {
-		return &badgerPrefixIterator{it, []byte(prefix)}
+func (b *badgerFromToIterator) Valid() bool {
+	return b.Iterator.Valid() && 1 > bytes.Compare(b.Item().Key(), b.to)
+}
+
+func keyRangeIterator(it *badger.Iterator, keyRange *pb.KeyRange) Iterator {
+	if keyRange.Prefix+keyRange.From+keyRange.To != "" {
+		from, to := keyRange.Prefix, keyRange.Prefix
+		if keyRange.Prefix < keyRange.From {
+			from = keyRange.From
+		}
+		if keyRange.Prefix > keyRange.To {
+			to = keyRange.To
+		}
+		if from == to {
+			return &badgerPrefixIterator{it, []byte(from)} //faster than from-to Iteration
+		}
+		return &badgerFromToIterator{
+			badgerPrefixIterator: badgerPrefixIterator{it, []byte(from)},
+			to:                   []byte(to),
+		}
 	}
 	return it
 }
 
-type KeyRangeWrapper struct {
-	*pb.KeyRange
-	pattern *regexp.Regexp
+type Matcher interface {
+	Match([]byte) bool
+}
+type MatcherFunc func([]byte) bool
+
+func (matcher MatcherFunc) Match(b []byte) bool {
+	return matcher(b)
 }
 
-func (krw keyRangeWrapper) Match(in string) bool {
-	if krw.From != "" {
-		if krw.From > in {
-			return false
-		}
+func NewMatcher(pattern string) (Matcher, error) {
+	if pattern != "" {
+		return regexp.Compile(pattern)
 	}
-	if krw.To != "" {
-		if krw.To < in {
-			return false
-		}
-	}
-	if krw.pattern != nil {
-		if match := krw.pattern.MatchString(in); !match {
-			return false
-		}
-	}
-	return true
-}
-
-func NewKeyRangeWrapper(keyRange *pb.KeyRange) (KeyRangeWrapper, error) {
-	var pattern *regexp.Regexp
-	var err error
-	if keyRange.Pattern != "" {
-		pattern, err = regexp.Compile(keyRange.Pattern)
-		if err != nil {
-			return KeyRangeWrapper{}, err
-		}
-	}
-	return KeyRangeWrapper{KeyRange: keyRange, pattern: pattern}, nil
+	return MatcherFunc(func(_ []byte) bool { return true }), nil
 }
