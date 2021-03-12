@@ -1,24 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	pb "github.com/MikkelHJuul/ld/test/client-proto"
-	"google.golang.org/grpc"
+	"io"
 	"log"
-	"math/rand"
+	"os"
 	"time"
+
+	"github.com/MikkelHJuul/ld/test/client-proto"
+	"github.com/mmcloughlin/geohash"
+	"google.golang.org/grpc"
 )
-
-var s1 = rand.NewSource(time.Now().UnixNano())
-var r1 = rand.New(s1)
-
-func randomDateInDecade() string {
-	year := r1.Intn(9)
-	mth := r1.Intn(11) + 1
-	day := r1.Intn(29) + 1
-	return fmt.Sprintf("%02d%02d%02d", year, mth, day)
-}
 
 func main() {
 	conn, err := grpc.Dial("localhost:5326", grpc.WithInsecure())
@@ -26,36 +23,71 @@ func main() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 	defer conn.Close()
-	client := pb.NewLdClient(conn)
-	ctx := context.Background()
-	for i  := 0; i < 1000; i++ {
-		for j  := 0; j < 200; j++ {
+	client := ld_proto.NewLdClient(conn)
+	ctx, cancel := context.WithTimeout(context.TODO(), 120*time.Second)
+	defer cancel()
 
-			key := randomDateInDecade() + fmt.Sprintf("%04d%03d", i, j) + "john"
-			if _, err := client.Insert(ctx, &pb.KeyValue{
-				Key: &pb.Key{Key: key},
-				Value: &pb.YourObject{
-					John: &pb.John{
-						Name:       "John",
-						Occupation: "being john",
-					},
-					JohnsApprentice: &pb.John{
-						Name:       "not even closely John",
-						Occupation: "being everyone else than john",
-					},
-				},
-			}); err != nil {
-				log.Fatalf("couldn't insert john: %v", err)
-			} else {
-				//log.Printf("Got a response, gee I hope it's OK: %v", *resp)
+	if false {
+		jsonFile, err := os.Open("2018-07.txt")
+		if err != nil {
+			log.Fatalf("could not open file!")
+		}
+
+		fmt.Println("Successfully Opened json")
+		// defer the closing of our jsonFile so that we can parse it later on
+		defer jsonFile.Close()
+
+		s := bufio.NewScanner(jsonFile)
+		for s.Scan() {
+			var v ld_proto.Feature
+			if err := json.Unmarshal(s.Bytes(), &v); err != nil {
+				log.Printf("unmarshal error")
 			}
-
-			if _, err := client.Fetch(ctx, &pb.Key{Key: key}); err != nil {
-				log.Fatalf("couldn't fetch john: %v", err)
-			} else {
-				//log.Printf("Got a response, gee I hope it's john: %v", *resp)
+			resp, err := client.Create(ctx, &ld_proto.KeyValue{
+				Key:   keyFromMessage(&v),
+				Value: &v,
+			})
+			if err != nil {
+				log.Printf("send error")
+			}
+			if resp != nil && resp.Error {
+				log.Printf("server error")
 			}
 		}
+		if s.Err() != nil {
+			log.Fatalf("some error %v", s.Err())
+		}
 	}
+	featureTime, _ := time.Parse(time.RFC3339, "2018-07-04T19:01:12.324000Z")
+	timePrefix := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timePrefix, uint64(featureTime.Unix()))
+	keyPrefix := hex.EncodeToString(timePrefix)[:6] //remove a prefix value
+	stream, err := client.ReadRange(ctx, &ld_proto.KeyRange{
+		Prefix: keyPrefix,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	count := 0
+	for {
+		feature, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Print(err)
+		}
+		log.Printf("%s", feature.Key)
+		count++
+	}
+	log.Printf("returned %d records", count)
+}
 
+func keyFromMessage(feature *ld_proto.Feature) string {
+	geoHash := geohash.EncodeWithPrecision(feature.Geometry.Coordinates[1], feature.Geometry.Coordinates[0], 8)
+	featureTime, _ := time.Parse(time.RFC3339, feature.Properties.Observed)
+	timePrefix := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timePrefix, uint64(featureTime.Unix()))
+	timeGeoHashPrefix := hex.EncodeToString(timePrefix) + geoHash
+	return fmt.Sprintf("%s%d%f", timeGeoHashPrefix, feature.Properties.Type, feature.Properties.Amp)
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/MikkelHJuul/ld/impl"
-	pb "github.com/MikkelHJuul/ld/proto"
+	"github.com/MikkelHJuul/ld/proto"
 
 	"flag"
 	"fmt"
@@ -35,7 +35,7 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 	server := impl.NewServer(*mem)
 	defer server.Close()
-	pb.RegisterLdServer(grpcServer, server)
+	proto.RegisterLdServer(grpcServer, server)
 	if err := grpcServer.Serve(lis); err != nil {
 		_ = fmt.Errorf("server exited with error: %v", err)
 		os.Exit(1)

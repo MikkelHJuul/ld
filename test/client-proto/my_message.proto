@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package ld.proto;
+
+message Feature {
+
+  message Geometry {
+    repeated double coordinates = 1;
+    string type = 2;
+  }
+
+  message Properties {
+    float amp = 1;
+    string created = 2;
+    string observed = 3;
+    string sensors = 4;
+    uint32 strokes = 5;
+    uint32 type = 6;
+  }
+
+  Geometry geometry = 1;
+  Properties properties = 2;
+  string type = 3;
+  string id = 4;
+}

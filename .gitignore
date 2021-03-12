@@ -2,4 +2,5 @@ ld-fs
 build
 test/build
 .idea
-
+data
+ld_badger

@@ -1,25 +1,18 @@
 syntax = "proto3";
 
-
 package ld.proto;
 
-option go_package = "github.com/MikkelHJuul/ld/proto";
-option java_package = "com.github.mikkelhjuul.ld.proto";
+import "my_message.proto";
 
 //the service `ld` is a database. As you can see it does one thing. CRUD!
 service ld {
-    //empty response means success
-    //the database returns your KeyValue for errors, order is not necessarily preserved
-    rpc Create(KeyValue) returns (KeyValue);
-    rpc CreateMany(stream KeyValue) returns (stream KeyValue);
+    rpc Create(KeyValue) returns (CreateResponse);
+    rpc CreateMany(stream KeyValue) returns (stream CreateResponse);
 
     rpc Read(Key) returns (KeyValue);
     rpc ReadMany(stream Key) returns (stream KeyValue);
     rpc ReadRange(KeyRange) returns (stream KeyValue);
 
-    //procedure call implemented as upsert
-    //the old KeyValue is returned
-    //If the data is inserted the old value is an empty reply, ie. an empty value is returned
     rpc Update(KeyValue) returns (KeyValue);
     rpc UpdateMany(stream KeyValue) returns (stream KeyValue);
 
@@ -28,6 +21,12 @@ service ld {
     rpc DeleteRange(KeyRange) returns (stream KeyValue);
 
     //possibly add signatures DoMany(KeyList) returns (stream KeyValue) because there are transaction-benefits to that.
+}
+
+// A response, true for Errors
+// empty response for no error
+message CreateResponse {
+    bool error = 1;
 }
 
 //The Key when querying directly for it
@@ -71,5 +70,6 @@ message KeyValue {
     // this works because string, bytes and nested messages are encoded the same:
     //   read https://developers.google.com/protocol-buffers/docs/encoding#strings
     //   and https://developers.google.com/protocol-buffers/docs/encoding#embedded
-    bytes value = 2;
+    Feature value = 2;
 }
+

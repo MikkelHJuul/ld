@@ -1,11 +1,9 @@
 package impl
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"log"
-	"regexp"
 
 	pb "github.com/MikkelHJuul/ld/proto"
 
@@ -17,23 +15,29 @@ type ldService struct {
 }
 
 func NewServer(inmem bool) *ldService {
-	db, err := badger.Open(badger.DefaultOptions("data/badger").WithInMemory(inmem))
+	db, err := badger.Open(badger.DefaultOptions("ld_badger").WithInMemory(inmem))
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &ldService{db}
 }
 
-func (l ldService) Create(_ context.Context, value *pb.KeyValue) (*pb.CreateResponse, error) {
-	err := l.DB.Update(func(txn *badger.Txn) error {
-		err := txn.Set([]byte(value.Key), value.Value)
-		return err
+func (l ldService) Create(_ context.Context, value *pb.KeyValue) (*pb.KeyValue, error) {
+	err := l.DB.View(func(txn *badger.Txn) (err error) {
+		_, err = readSingleItem(txn, []byte(value.Key))
+		return
+	})
+	if err != badger.ErrKeyNotFound {
+		return value, err
+	}
+	err = l.DB.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte(value.Key), value.Value)
 	})
 	if err != nil {
 		log.Printf("error while saving data to database: %v ", err)
-		return &pb.CreateResponse{Error: true}, err
+		return value, err
 	}
-	return &pb.CreateResponse{}, nil
+	return nil, nil
 }
 
 func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
@@ -44,9 +48,21 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 			break
 		}
 		if err != nil {
-			_ = server.Send(&pb.CreateResponse{Error: true})
+			_ = server.Send(create)
 			return err
 		}
+		err = l.DB.View(func(txn *badger.Txn) (err error) {
+			_, err = readSingleItem(txn, []byte(create.Key))
+			return
+		})
+		if err != badger.ErrKeyNotFound {
+			//there is already a record with the given key
+			if err = server.Send(create); err != nil {
+				return err
+			}
+			continue
+		}
+		log.Printf("got message, key: %s", create.Key)
 		if err := txn.Set([]byte(create.Key), create.Value); err == badger.ErrTxnTooBig {
 			err = txn.Commit()
 			if err != nil {
@@ -58,7 +74,7 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 				return err //probably not?
 			}
 		}
-		err = server.Send(&pb.CreateResponse{})
+		err = server.Send(&pb.KeyValue{})
 		if err != nil {
 			return err //probably not?
 		}
@@ -72,13 +88,9 @@ func (l ldService) CreateMany(server pb.Ld_CreateManyServer) error {
 
 func (l ldService) Read(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
-	err := l.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(key.Key))
-		if err != nil {
-			return err
-		}
-		value, err = item.ValueCopy(nil)
-		return err
+	err := l.DB.View(func(txn *badger.Txn) (err error) {
+		value, err = readSingleFromKey(txn, key)
+		return
 	})
 	if err != nil {
 		log.Printf("error while fetching data from database: %v", err)
@@ -99,30 +111,25 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 			return err
 		}
 		var value []byte
-		if err := l.DB.View(func(txn *badger.Txn) error {
-			item, err := txn.Get([]byte(key.Key))
-			if err != nil {
-				return err
-			}
-			value, err = item.ValueCopy(nil)
-			return err
+		if err := l.DB.View(func(txn *badger.Txn) (err error) {
+			value, err = readSingleFromKey(txn, key)
+			return
 		}); err == badger.ErrTxnTooBig {
 			err = txn.Commit()
 			if err != nil {
-				return err //probably not?
+				log.Print(err) //uncommitted read-transaction... hope it is fine
 			}
 			txn = l.DB.NewTransaction(false)
-			item, err := txn.Get([]byte(key.Key))
+			value, err = readSingleFromKey(txn, key)
 			if err != nil {
-				return err //probably not?
+				log.Print("could not read transaction after failure")
 			}
-			value, err = item.ValueCopy(nil)
-			if err != nil {
-				return err //probably not?
+		} else if err == badger.ErrKeyNotFound {
+			if err = server.Send(&pb.KeyValue{}); err != nil { //todo decide if null item is the way
+				return err
 			}
 		}
-		err = server.Send(&pb.KeyValue{Key: key.Key, Value: value})
-		if err != nil {
+		if err = server.Send(&pb.KeyValue{Key: key.Key, Value: value}); err != nil {
 			return err
 		}
 	}
@@ -132,10 +139,43 @@ func (l ldService) ReadMany(server pb.Ld_ReadManyServer) error {
 func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
+		log.Printf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
 		return err
 	}
-	chMatches := make(chan []byte, 1000) // channel size?
-	go l.DB.View(func(txn *badger.Txn) error {
+	chMatches := make(chan []byte)
+
+	go func() {
+		select {
+		case key := <-chMatches:
+			txn := l.DB.NewTransaction(false)
+			defer txn.Discard()
+			item, err := txn.Get(key)
+			if err == badger.ErrTxnTooBig {
+				if err = txn.Commit(); err != nil {
+					log.Print("error while commit too large transaction early", err)
+				}
+				txn = l.DB.NewTransaction(false)
+				if item, err = txn.Get(key); err != nil {
+					log.Print("could not fetch value for key", err)
+				}
+			}
+			if item != nil {
+				itemVal, err := item.ValueCopy(nil)
+				if err != nil {
+					log.Print("could not copy value of the item", err)
+				}
+				if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
+					log.Print("error sending the KeyValue object", err)
+				}
+			}
+			err = txn.Commit()
+			if err != nil {
+				log.Printf("could not commit transaction")
+			}
+		}
+	}()
+
+	if err = l.DB.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
@@ -148,33 +188,8 @@ func (l ldService) ReadRange(keyRange *pb.KeyRange, server pb.Ld_ReadRangeServer
 			}
 		}
 		return nil
-	})
-	txn := l.DB.NewTransaction(false)
-	defer txn.Discard()
-	for key := range chMatches {
-		item, err := txn.Get(key)
-		if err == badger.ErrTxnTooBig {
-			if err = txn.Commit(); err != nil {
-				return err
-			}
-			txn = l.DB.NewTransaction(false)
-			item, err = txn.Get(key)
-			if err != nil {
-				return err
-			}
-		}
-		if item != nil {
-			itemVal, err := item.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
-			if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
-				return err
-			}
-		}
-	}
-	err = txn.Commit()
-	if err != nil {
+	}); err != nil {
+		log.Print("error finding keys", err)
 		return err
 	}
 	return nil
@@ -341,70 +356,4 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		return err
 	}
 	return nil
-}
-
-type Iterator interface {
-	Rewind()
-	Valid() bool
-	Next()
-	Item() *badger.Item
-}
-
-type badgerPrefixIterator struct {
-	*badger.Iterator
-	prefix []byte
-}
-
-//prefix is used as from
-type badgerFromToIterator struct {
-	badgerPrefixIterator
-	to []byte
-}
-
-func (b *badgerPrefixIterator) Rewind() {
-	b.Seek(b.prefix)
-}
-
-func (b *badgerPrefixIterator) Valid() bool {
-	return b.ValidForPrefix(b.prefix)
-}
-
-func (b *badgerFromToIterator) Valid() bool {
-	return b.Iterator.Valid() && 1 > bytes.Compare(b.Item().Key(), b.to)
-}
-
-func keyRangeIterator(it *badger.Iterator, keyRange *pb.KeyRange) Iterator {
-	if keyRange.Prefix+keyRange.From+keyRange.To != "" {
-		from, to := keyRange.Prefix, keyRange.Prefix
-		if keyRange.Prefix < keyRange.From {
-			from = keyRange.From
-		}
-		if keyRange.Prefix > keyRange.To {
-			to = keyRange.To
-		}
-		if from == to {
-			return &badgerPrefixIterator{it, []byte(from)} //faster than from-to Iteration
-		}
-		return &badgerFromToIterator{
-			badgerPrefixIterator: badgerPrefixIterator{it, []byte(from)},
-			to:                   []byte(to),
-		}
-	}
-	return it
-}
-
-type Matcher interface {
-	Match([]byte) bool
-}
-type MatcherFunc func([]byte) bool
-
-func (matcher MatcherFunc) Match(b []byte) bool {
-	return matcher(b)
-}
-
-func NewMatcher(pattern string) (Matcher, error) {
-	if pattern != "" {
-		return regexp.Compile(pattern)
-	}
-	return MatcherFunc(func(_ []byte) bool { return true }), nil
 }
