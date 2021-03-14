@@ -10,18 +10,12 @@ option java_package = "com.github.mikkelhjuul.ld.proto";
 service ld {
     //empty response means success
     //the database returns your KeyValue for errors, order is not necessarily preserved
-    rpc Create(KeyValue) returns (KeyValue);
-    rpc CreateMany(stream KeyValue) returns (stream KeyValue);
+    rpc Set(KeyValue) returns (KeyValue);
+    rpc SetMany(stream KeyValue) returns (stream KeyValue);
 
-    rpc Read(Key) returns (KeyValue);
-    rpc ReadMany(stream Key) returns (stream KeyValue);
-    rpc ReadRange(KeyRange) returns (stream KeyValue);
-
-    //procedure call implemented as upsert
-    //the old KeyValue is returned
-    //If the data is inserted the old value is an empty reply, ie. an empty value is returned
-    rpc Update(KeyValue) returns (KeyValue);
-    rpc UpdateMany(stream KeyValue) returns (stream KeyValue);
+    rpc Get(Key) returns (KeyValue);
+    rpc GetMany(stream Key) returns (stream KeyValue);
+    rpc GetRange(KeyRange) returns (stream KeyValue);
 
     rpc Delete(Key) returns (KeyValue);
     rpc DeleteMany(stream Key) returns (stream KeyValue);

@@ -238,44 +238,37 @@ var file_ld_proto_rawDesc = []byte{
 	0x32, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6b,
 	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
 	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x76, 0x61,
-	0x6c, 0x75, 0x65, 0x32, 0x8c, 0x04, 0x0a, 0x02, 0x6c, 0x64, 0x12, 0x30, 0x0a, 0x06, 0x43, 0x72,
-	0x65, 0x61, 0x74, 0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e,
+	0x6c, 0x75, 0x65, 0x32, 0x97, 0x03, 0x0a, 0x02, 0x6c, 0x64, 0x12, 0x2d, 0x0a, 0x03, 0x53, 0x65,
+	0x74, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79,
+	0x56, 0x61, 0x6c, 0x75, 0x65, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x35, 0x0a, 0x07, 0x53, 0x65, 0x74,
+	0x4d, 0x61, 0x6e, 0x79, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e,
 	0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x38, 0x0a, 0x0a,
-	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x61, 0x6e, 0x79, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x1a, 0x12,
-	0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c,
-	0x75, 0x65, 0x28, 0x01, 0x30, 0x01, 0x12, 0x29, 0x0a, 0x04, 0x52, 0x65, 0x61, 0x64, 0x12, 0x0d,
-	0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e,
-	0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75,
-	0x65, 0x12, 0x31, 0x0a, 0x08, 0x52, 0x65, 0x61, 0x64, 0x4d, 0x61, 0x6e, 0x79, 0x12, 0x0d, 0x2e,
-	0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e, 0x6c,
-	0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x28, 0x01, 0x30, 0x01, 0x12, 0x35, 0x0a, 0x09, 0x52, 0x65, 0x61, 0x64, 0x52, 0x61, 0x6e, 0x67,
-	0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79,
-	0x52, 0x61, 0x6e, 0x67, 0x65, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x30, 0x01, 0x12, 0x30, 0x0a, 0x06, 0x55,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x38, 0x0a,
-	0x0a, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x4d, 0x61, 0x6e, 0x79, 0x12, 0x12, 0x2e, 0x6c, 0x64,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x1a,
-	0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61,
-	0x6c, 0x75, 0x65, 0x28, 0x01, 0x30, 0x01, 0x12, 0x2b, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x12, 0x0d, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79,
-	0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x12, 0x33, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4d, 0x61,
-	0x6e, 0x79, 0x12, 0x0d, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65,
-	0x79, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79,
-	0x56, 0x61, 0x6c, 0x75, 0x65, 0x28, 0x01, 0x30, 0x01, 0x12, 0x37, 0x0a, 0x0b, 0x44, 0x65, 0x6c,
-	0x65, 0x74, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x28, 0x01, 0x30, 0x01,
+	0x12, 0x28, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x0d, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x30, 0x0a, 0x07, 0x47, 0x65,
+	0x74, 0x4d, 0x61, 0x6e, 0x79, 0x12, 0x0d, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e,
+	0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x28, 0x01, 0x30, 0x01, 0x12, 0x34, 0x0a, 0x08,
+	0x47, 0x65, 0x74, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x1a, 0x12, 0x2e, 0x6c,
 	0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x30, 0x01, 0x42, 0x42, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x6d, 0x69, 0x6b, 0x6b, 0x65, 0x6c, 0x68, 0x6a, 0x75, 0x75, 0x6c, 0x2e, 0x6c, 0x64, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5a, 0x1f, 0x67, 0x69, 0x74, 0x6c, 0x61, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x4d, 0x69, 0x6b, 0x6b, 0x65, 0x6c, 0x48, 0x4a, 0x75, 0x75, 0x6c, 0x2f, 0x6c, 0x64,
-	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x30, 0x01, 0x12, 0x2b, 0x0a, 0x06, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x0d, 0x2e, 0x6c,
+	0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e, 0x6c, 0x64,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12,
+	0x33, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4d, 0x61, 0x6e, 0x79, 0x12, 0x0d, 0x2e,
+	0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x1a, 0x12, 0x2e, 0x6c,
+	0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x28, 0x01, 0x30, 0x01, 0x12, 0x37, 0x0a, 0x0b, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x61,
+	0x6e, 0x67, 0x65, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b,
+	0x65, 0x79, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x1a, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x30, 0x01, 0x42, 0x42, 0x0a,
+	0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x6d, 0x69, 0x6b, 0x6b,
+	0x65, 0x6c, 0x68, 0x6a, 0x75, 0x75, 0x6c, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x5a, 0x1f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x4d, 0x69, 0x6b,
+	0x6b, 0x65, 0x6c, 0x48, 0x4a, 0x75, 0x75, 0x6c, 0x2f, 0x6c, 0x64, 0x2f, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -297,31 +290,27 @@ var file_ld_proto_goTypes = []interface{}{
 	(*KeyValue)(nil), // 2: ld.proto.KeyValue
 }
 var file_ld_proto_depIdxs = []int32{
-	2,  // 0: ld.proto.ld.Create:input_type -> ld.proto.KeyValue
-	2,  // 1: ld.proto.ld.CreateMany:input_type -> ld.proto.KeyValue
-	0,  // 2: ld.proto.ld.Read:input_type -> ld.proto.Key
-	0,  // 3: ld.proto.ld.ReadMany:input_type -> ld.proto.Key
-	1,  // 4: ld.proto.ld.ReadRange:input_type -> ld.proto.KeyRange
-	2,  // 5: ld.proto.ld.Update:input_type -> ld.proto.KeyValue
-	2,  // 6: ld.proto.ld.UpdateMany:input_type -> ld.proto.KeyValue
-	0,  // 7: ld.proto.ld.Delete:input_type -> ld.proto.Key
-	0,  // 8: ld.proto.ld.DeleteMany:input_type -> ld.proto.Key
-	1,  // 9: ld.proto.ld.DeleteRange:input_type -> ld.proto.KeyRange
-	2,  // 10: ld.proto.ld.Create:output_type -> ld.proto.KeyValue
-	2,  // 11: ld.proto.ld.CreateMany:output_type -> ld.proto.KeyValue
-	2,  // 12: ld.proto.ld.Read:output_type -> ld.proto.KeyValue
-	2,  // 13: ld.proto.ld.ReadMany:output_type -> ld.proto.KeyValue
-	2,  // 14: ld.proto.ld.ReadRange:output_type -> ld.proto.KeyValue
-	2,  // 15: ld.proto.ld.Update:output_type -> ld.proto.KeyValue
-	2,  // 16: ld.proto.ld.UpdateMany:output_type -> ld.proto.KeyValue
-	2,  // 17: ld.proto.ld.Delete:output_type -> ld.proto.KeyValue
-	2,  // 18: ld.proto.ld.DeleteMany:output_type -> ld.proto.KeyValue
-	2,  // 19: ld.proto.ld.DeleteRange:output_type -> ld.proto.KeyValue
-	10, // [10:20] is the sub-list for method output_type
-	0,  // [0:10] is the sub-list for method input_type
-	0,  // [0:0] is the sub-list for extension type_name
-	0,  // [0:0] is the sub-list for extension extendee
-	0,  // [0:0] is the sub-list for field type_name
+	2, // 0: ld.proto.ld.Set:input_type -> ld.proto.KeyValue
+	2, // 1: ld.proto.ld.SetMany:input_type -> ld.proto.KeyValue
+	0, // 2: ld.proto.ld.Get:input_type -> ld.proto.Key
+	0, // 3: ld.proto.ld.GetMany:input_type -> ld.proto.Key
+	1, // 4: ld.proto.ld.GetRange:input_type -> ld.proto.KeyRange
+	0, // 5: ld.proto.ld.Delete:input_type -> ld.proto.Key
+	0, // 6: ld.proto.ld.DeleteMany:input_type -> ld.proto.Key
+	1, // 7: ld.proto.ld.DeleteRange:input_type -> ld.proto.KeyRange
+	2, // 8: ld.proto.ld.Set:output_type -> ld.proto.KeyValue
+	2, // 9: ld.proto.ld.SetMany:output_type -> ld.proto.KeyValue
+	2, // 10: ld.proto.ld.Get:output_type -> ld.proto.KeyValue
+	2, // 11: ld.proto.ld.GetMany:output_type -> ld.proto.KeyValue
+	2, // 12: ld.proto.ld.GetRange:output_type -> ld.proto.KeyValue
+	2, // 13: ld.proto.ld.Delete:output_type -> ld.proto.KeyValue
+	2, // 14: ld.proto.ld.DeleteMany:output_type -> ld.proto.KeyValue
+	2, // 15: ld.proto.ld.DeleteRange:output_type -> ld.proto.KeyValue
+	8, // [8:16] is the sub-list for method output_type
+	0, // [0:8] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_ld_proto_init() }
@@ -401,16 +390,11 @@ const _ = grpc.SupportPackageIsVersion6
 type LdClient interface {
 	//empty response means success
 	//the database returns your KeyValue for errors, order is not necessarily preserved
-	Create(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error)
-	CreateMany(ctx context.Context, opts ...grpc.CallOption) (Ld_CreateManyClient, error)
-	Read(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
-	ReadMany(ctx context.Context, opts ...grpc.CallOption) (Ld_ReadManyClient, error)
-	ReadRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_ReadRangeClient, error)
-	//procedure call implemented as upsert
-	//the old KeyValue is returned
-	//If the data is inserted the old value is an empty reply, ie. an empty value is returned
-	Update(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error)
-	UpdateMany(ctx context.Context, opts ...grpc.CallOption) (Ld_UpdateManyClient, error)
+	Set(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error)
+	SetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_SetManyClient, error)
+	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
+	GetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_GetManyClient, error)
+	GetRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_GetRangeClient, error)
 	Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	DeleteMany(ctx context.Context, opts ...grpc.CallOption) (Ld_DeleteManyClient, error)
 	DeleteRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_DeleteRangeClient, error)
@@ -424,39 +408,39 @@ func NewLdClient(cc grpc.ClientConnInterface) LdClient {
 	return &ldClient{cc}
 }
 
-func (c *ldClient) Create(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error) {
+func (c *ldClient) Set(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error) {
 	out := new(KeyValue)
-	err := c.cc.Invoke(ctx, "/ld.proto.ld/Create", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ld.proto.ld/Set", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ldClient) CreateMany(ctx context.Context, opts ...grpc.CallOption) (Ld_CreateManyClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[0], "/ld.proto.ld/CreateMany", opts...)
+func (c *ldClient) SetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_SetManyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[0], "/ld.proto.ld/SetMany", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &ldCreateManyClient{stream}
+	x := &ldSetManyClient{stream}
 	return x, nil
 }
 
-type Ld_CreateManyClient interface {
+type Ld_SetManyClient interface {
 	Send(*KeyValue) error
 	Recv() (*KeyValue, error)
 	grpc.ClientStream
 }
 
-type ldCreateManyClient struct {
+type ldSetManyClient struct {
 	grpc.ClientStream
 }
 
-func (x *ldCreateManyClient) Send(m *KeyValue) error {
+func (x *ldSetManyClient) Send(m *KeyValue) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *ldCreateManyClient) Recv() (*KeyValue, error) {
+func (x *ldSetManyClient) Recv() (*KeyValue, error) {
 	m := new(KeyValue)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -464,39 +448,39 @@ func (x *ldCreateManyClient) Recv() (*KeyValue, error) {
 	return m, nil
 }
 
-func (c *ldClient) Read(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error) {
+func (c *ldClient) Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error) {
 	out := new(KeyValue)
-	err := c.cc.Invoke(ctx, "/ld.proto.ld/Read", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ld.proto.ld/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *ldClient) ReadMany(ctx context.Context, opts ...grpc.CallOption) (Ld_ReadManyClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[1], "/ld.proto.ld/ReadMany", opts...)
+func (c *ldClient) GetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_GetManyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[1], "/ld.proto.ld/GetMany", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &ldReadManyClient{stream}
+	x := &ldGetManyClient{stream}
 	return x, nil
 }
 
-type Ld_ReadManyClient interface {
+type Ld_GetManyClient interface {
 	Send(*Key) error
 	Recv() (*KeyValue, error)
 	grpc.ClientStream
 }
 
-type ldReadManyClient struct {
+type ldGetManyClient struct {
 	grpc.ClientStream
 }
 
-func (x *ldReadManyClient) Send(m *Key) error {
+func (x *ldGetManyClient) Send(m *Key) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *ldReadManyClient) Recv() (*KeyValue, error) {
+func (x *ldGetManyClient) Recv() (*KeyValue, error) {
 	m := new(KeyValue)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -504,12 +488,12 @@ func (x *ldReadManyClient) Recv() (*KeyValue, error) {
 	return m, nil
 }
 
-func (c *ldClient) ReadRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_ReadRangeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[2], "/ld.proto.ld/ReadRange", opts...)
+func (c *ldClient) GetRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_GetRangeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[2], "/ld.proto.ld/GetRange", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &ldReadRangeClient{stream}
+	x := &ldGetRangeClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -519,56 +503,16 @@ func (c *ldClient) ReadRange(ctx context.Context, in *KeyRange, opts ...grpc.Cal
 	return x, nil
 }
 
-type Ld_ReadRangeClient interface {
+type Ld_GetRangeClient interface {
 	Recv() (*KeyValue, error)
 	grpc.ClientStream
 }
 
-type ldReadRangeClient struct {
+type ldGetRangeClient struct {
 	grpc.ClientStream
 }
 
-func (x *ldReadRangeClient) Recv() (*KeyValue, error) {
-	m := new(KeyValue)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *ldClient) Update(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error) {
-	out := new(KeyValue)
-	err := c.cc.Invoke(ctx, "/ld.proto.ld/Update", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *ldClient) UpdateMany(ctx context.Context, opts ...grpc.CallOption) (Ld_UpdateManyClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[3], "/ld.proto.ld/UpdateMany", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &ldUpdateManyClient{stream}
-	return x, nil
-}
-
-type Ld_UpdateManyClient interface {
-	Send(*KeyValue) error
-	Recv() (*KeyValue, error)
-	grpc.ClientStream
-}
-
-type ldUpdateManyClient struct {
-	grpc.ClientStream
-}
-
-func (x *ldUpdateManyClient) Send(m *KeyValue) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *ldUpdateManyClient) Recv() (*KeyValue, error) {
+func (x *ldGetRangeClient) Recv() (*KeyValue, error) {
 	m := new(KeyValue)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -586,7 +530,7 @@ func (c *ldClient) Delete(ctx context.Context, in *Key, opts ...grpc.CallOption)
 }
 
 func (c *ldClient) DeleteMany(ctx context.Context, opts ...grpc.CallOption) (Ld_DeleteManyClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[4], "/ld.proto.ld/DeleteMany", opts...)
+	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[3], "/ld.proto.ld/DeleteMany", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +561,7 @@ func (x *ldDeleteManyClient) Recv() (*KeyValue, error) {
 }
 
 func (c *ldClient) DeleteRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_DeleteRangeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[5], "/ld.proto.ld/DeleteRange", opts...)
+	stream, err := c.cc.NewStream(ctx, &_Ld_serviceDesc.Streams[4], "/ld.proto.ld/DeleteRange", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -652,16 +596,11 @@ func (x *ldDeleteRangeClient) Recv() (*KeyValue, error) {
 type LdServer interface {
 	//empty response means success
 	//the database returns your KeyValue for errors, order is not necessarily preserved
-	Create(context.Context, *KeyValue) (*KeyValue, error)
-	CreateMany(Ld_CreateManyServer) error
-	Read(context.Context, *Key) (*KeyValue, error)
-	ReadMany(Ld_ReadManyServer) error
-	ReadRange(*KeyRange, Ld_ReadRangeServer) error
-	//procedure call implemented as upsert
-	//the old KeyValue is returned
-	//If the data is inserted the old value is an empty reply, ie. an empty value is returned
-	Update(context.Context, *KeyValue) (*KeyValue, error)
-	UpdateMany(Ld_UpdateManyServer) error
+	Set(context.Context, *KeyValue) (*KeyValue, error)
+	SetMany(Ld_SetManyServer) error
+	Get(context.Context, *Key) (*KeyValue, error)
+	GetMany(Ld_GetManyServer) error
+	GetRange(*KeyRange, Ld_GetRangeServer) error
 	Delete(context.Context, *Key) (*KeyValue, error)
 	DeleteMany(Ld_DeleteManyServer) error
 	DeleteRange(*KeyRange, Ld_DeleteRangeServer) error
@@ -671,26 +610,20 @@ type LdServer interface {
 type UnimplementedLdServer struct {
 }
 
-func (*UnimplementedLdServer) Create(context.Context, *KeyValue) (*KeyValue, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (*UnimplementedLdServer) Set(context.Context, *KeyValue) (*KeyValue, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
 }
-func (*UnimplementedLdServer) CreateMany(Ld_CreateManyServer) error {
-	return status.Errorf(codes.Unimplemented, "method CreateMany not implemented")
+func (*UnimplementedLdServer) SetMany(Ld_SetManyServer) error {
+	return status.Errorf(codes.Unimplemented, "method SetMany not implemented")
 }
-func (*UnimplementedLdServer) Read(context.Context, *Key) (*KeyValue, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
+func (*UnimplementedLdServer) Get(context.Context, *Key) (*KeyValue, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (*UnimplementedLdServer) ReadMany(Ld_ReadManyServer) error {
-	return status.Errorf(codes.Unimplemented, "method ReadMany not implemented")
+func (*UnimplementedLdServer) GetMany(Ld_GetManyServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetMany not implemented")
 }
-func (*UnimplementedLdServer) ReadRange(*KeyRange, Ld_ReadRangeServer) error {
-	return status.Errorf(codes.Unimplemented, "method ReadRange not implemented")
-}
-func (*UnimplementedLdServer) Update(context.Context, *KeyValue) (*KeyValue, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
-}
-func (*UnimplementedLdServer) UpdateMany(Ld_UpdateManyServer) error {
-	return status.Errorf(codes.Unimplemented, "method UpdateMany not implemented")
+func (*UnimplementedLdServer) GetRange(*KeyRange, Ld_GetRangeServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetRange not implemented")
 }
 func (*UnimplementedLdServer) Delete(context.Context, *Key) (*KeyValue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -706,43 +639,43 @@ func RegisterLdServer(s *grpc.Server, srv LdServer) {
 	s.RegisterService(&_Ld_serviceDesc, srv)
 }
 
-func _Ld_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Ld_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(KeyValue)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LdServer).Create(ctx, in)
+		return srv.(LdServer).Set(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ld.proto.ld/Create",
+		FullMethod: "/ld.proto.ld/Set",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LdServer).Create(ctx, req.(*KeyValue))
+		return srv.(LdServer).Set(ctx, req.(*KeyValue))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Ld_CreateMany_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(LdServer).CreateMany(&ldCreateManyServer{stream})
+func _Ld_SetMany_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LdServer).SetMany(&ldSetManyServer{stream})
 }
 
-type Ld_CreateManyServer interface {
+type Ld_SetManyServer interface {
 	Send(*KeyValue) error
 	Recv() (*KeyValue, error)
 	grpc.ServerStream
 }
 
-type ldCreateManyServer struct {
+type ldSetManyServer struct {
 	grpc.ServerStream
 }
 
-func (x *ldCreateManyServer) Send(m *KeyValue) error {
+func (x *ldSetManyServer) Send(m *KeyValue) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *ldCreateManyServer) Recv() (*KeyValue, error) {
+func (x *ldSetManyServer) Recv() (*KeyValue, error) {
 	m := new(KeyValue)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -750,43 +683,43 @@ func (x *ldCreateManyServer) Recv() (*KeyValue, error) {
 	return m, nil
 }
 
-func _Ld_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Ld_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Key)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LdServer).Read(ctx, in)
+		return srv.(LdServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ld.proto.ld/Read",
+		FullMethod: "/ld.proto.ld/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LdServer).Read(ctx, req.(*Key))
+		return srv.(LdServer).Get(ctx, req.(*Key))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Ld_ReadMany_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(LdServer).ReadMany(&ldReadManyServer{stream})
+func _Ld_GetMany_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LdServer).GetMany(&ldGetManyServer{stream})
 }
 
-type Ld_ReadManyServer interface {
+type Ld_GetManyServer interface {
 	Send(*KeyValue) error
 	Recv() (*Key, error)
 	grpc.ServerStream
 }
 
-type ldReadManyServer struct {
+type ldGetManyServer struct {
 	grpc.ServerStream
 }
 
-func (x *ldReadManyServer) Send(m *KeyValue) error {
+func (x *ldGetManyServer) Send(m *KeyValue) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *ldReadManyServer) Recv() (*Key, error) {
+func (x *ldGetManyServer) Recv() (*Key, error) {
 	m := new(Key)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -794,69 +727,25 @@ func (x *ldReadManyServer) Recv() (*Key, error) {
 	return m, nil
 }
 
-func _Ld_ReadRange_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Ld_GetRange_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(KeyRange)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(LdServer).ReadRange(m, &ldReadRangeServer{stream})
+	return srv.(LdServer).GetRange(m, &ldGetRangeServer{stream})
 }
 
-type Ld_ReadRangeServer interface {
+type Ld_GetRangeServer interface {
 	Send(*KeyValue) error
 	grpc.ServerStream
 }
 
-type ldReadRangeServer struct {
+type ldGetRangeServer struct {
 	grpc.ServerStream
 }
 
-func (x *ldReadRangeServer) Send(m *KeyValue) error {
+func (x *ldGetRangeServer) Send(m *KeyValue) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func _Ld_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeyValue)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LdServer).Update(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ld.proto.ld/Update",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LdServer).Update(ctx, req.(*KeyValue))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Ld_UpdateMany_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(LdServer).UpdateMany(&ldUpdateManyServer{stream})
-}
-
-type Ld_UpdateManyServer interface {
-	Send(*KeyValue) error
-	Recv() (*KeyValue, error)
-	grpc.ServerStream
-}
-
-type ldUpdateManyServer struct {
-	grpc.ServerStream
-}
-
-func (x *ldUpdateManyServer) Send(m *KeyValue) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *ldUpdateManyServer) Recv() (*KeyValue, error) {
-	m := new(KeyValue)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func _Ld_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -929,16 +818,12 @@ var _Ld_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*LdServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Create",
-			Handler:    _Ld_Create_Handler,
+			MethodName: "Set",
+			Handler:    _Ld_Set_Handler,
 		},
 		{
-			MethodName: "Read",
-			Handler:    _Ld_Read_Handler,
-		},
-		{
-			MethodName: "Update",
-			Handler:    _Ld_Update_Handler,
+			MethodName: "Get",
+			Handler:    _Ld_Get_Handler,
 		},
 		{
 			MethodName: "Delete",
@@ -947,27 +832,21 @@ var _Ld_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "CreateMany",
-			Handler:       _Ld_CreateMany_Handler,
+			StreamName:    "SetMany",
+			Handler:       _Ld_SetMany_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "ReadMany",
-			Handler:       _Ld_ReadMany_Handler,
+			StreamName:    "GetMany",
+			Handler:       _Ld_GetMany_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "ReadRange",
-			Handler:       _Ld_ReadRange_Handler,
+			StreamName:    "GetRange",
+			Handler:       _Ld_GetRange_Handler,
 			ServerStreams: true,
-		},
-		{
-			StreamName:    "UpdateMany",
-			Handler:       _Ld_UpdateMany_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "DeleteMany",
