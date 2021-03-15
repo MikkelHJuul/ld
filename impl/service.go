@@ -124,7 +124,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 }
 
 func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.WaitGroup, key *pb.Key) {
-	wg.Done()
+	defer wg.Done()
 	err := sendKeyValue(out, txn, key)
 	if err == badger.ErrTxnTooBig {
 		err = txn.Commit()
