@@ -189,12 +189,12 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 				chKeyMatches <- &pb.Key{Key: string(k)}
 			}
 		}
-		close(chKeyMatches)
 		return nil
 	}); err != nil {
 		log.Print("error finding keys", err)
 		return err
 	}
+	close(chKeyMatches)
 	return nil
 }
 
