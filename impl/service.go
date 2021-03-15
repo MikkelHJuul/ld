@@ -2,10 +2,10 @@ package impl
 
 import (
 	"context"
+	pb "github.com/MikkelHJuul/ld/proto"
 	"io"
 	"log"
-
-	pb "github.com/MikkelHJuul/ld/proto"
+	"sync"
 
 	"github.com/dgraph-io/badger/v3"
 )
@@ -106,21 +106,25 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 			}
 		}
 	}()
+	wg := &sync.WaitGroup{}
 	for {
 		key, err := server.Recv()
 		if err == io.EOF {
+			wg.Wait()
 			close(out)
 			break
 		}
 		if err != nil {
 			return err
 		}
-		go l.sendKeyWith(out, txn, key)
+		wg.Add(1)
+		go l.sendKeyWith(out, txn, wg, key)
 	}
 	return nil
 }
 
-func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) {
+func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.WaitGroup, key *pb.Key) {
+	wg.Done()
 	err := sendKeyValue(out, txn, key)
 	if err == badger.ErrTxnTooBig {
 		err = txn.Commit()
@@ -162,11 +166,14 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	}()
 
 	go func() {
+		wg := &sync.WaitGroup{}
 		txn := l.DB.NewTransaction(false)
 		defer txn.Commit()
 		for key := range chKeyMatches {
-			go l.sendKeyWith(out, txn, key)
+			wg.Add(1)
+			go l.sendKeyWith(out, txn, wg, key)
 		}
+		wg.Wait()
 		close(out)
 	}()
 
