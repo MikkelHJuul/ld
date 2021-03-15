@@ -6,27 +6,18 @@ import "my_message.proto";
 
 //the service `ld` is a database. As you can see it does one thing. CRUD!
 service ld {
-    rpc Create(KeyValue) returns (CreateResponse);
-    rpc CreateMany(stream KeyValue) returns (stream CreateResponse);
+    rpc Set(KeyValue) returns (KeyValue);
+    rpc SetMany(stream KeyValue) returns (stream KeyValue);
 
-    rpc Read(Key) returns (KeyValue);
-    rpc ReadMany(stream Key) returns (stream KeyValue);
-    rpc ReadRange(KeyRange) returns (stream KeyValue);
-
-    rpc Update(KeyValue) returns (KeyValue);
-    rpc UpdateMany(stream KeyValue) returns (stream KeyValue);
+    rpc Get(Key) returns (KeyValue);
+    rpc GetMany(stream Key) returns (stream KeyValue);
+    rpc GetRange(KeyRange) returns (stream KeyValue);
 
     rpc Delete(Key) returns (KeyValue);
     rpc DeleteMany(stream Key) returns (stream KeyValue);
     rpc DeleteRange(KeyRange) returns (stream KeyValue);
 
     //possibly add signatures DoMany(KeyList) returns (stream KeyValue) because there are transaction-benefits to that.
-}
-
-// A response, true for Errors
-// empty response for no error
-message CreateResponse {
-    bool error = 1;
 }
 
 //The Key when querying directly for it

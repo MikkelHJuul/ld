@@ -27,50 +27,60 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.TODO(), 120*time.Second)
 	defer cancel()
 
-	if false {
-		jsonFile, err := os.Open("2018-07.txt")
-		if err != nil {
-			log.Fatalf("could not open file!")
-		}
+	stream, _ := client.SetMany(ctx)
 
-		fmt.Println("Successfully Opened json")
-		// defer the closing of our jsonFile so that we can parse it later on
-		defer jsonFile.Close()
-
-		s := bufio.NewScanner(jsonFile)
-		for s.Scan() {
-			var v ld_proto.Feature
-			if err := json.Unmarshal(s.Bytes(), &v); err != nil {
-				log.Printf("unmarshal error")
-			}
-			resp, err := client.Create(ctx, &ld_proto.KeyValue{
-				Key:   keyFromMessage(&v),
-				Value: &v,
-			})
+	transferData := true
+	go func() {
+		if transferData {
+			jsonFile, err := os.Open("2018-07.txt")
 			if err != nil {
-				log.Printf("send error")
+				log.Fatalf("could not open file!")
 			}
-			if resp != nil && resp.Error {
-				log.Printf("server error")
+
+			fmt.Println("Successfully Opened json")
+			// defer the closing of our jsonFile so that we can parse it later on
+			defer jsonFile.Close()
+
+			s := bufio.NewScanner(jsonFile)
+			for s.Scan() {
+				var v ld_proto.Feature
+				if err := json.Unmarshal(s.Bytes(), &v); err != nil {
+					log.Printf("unmarshal error")
+				}
+				err := stream.Send(&ld_proto.KeyValue{
+					Key:   keyFromMessage(&v),
+					Value: &v,
+				})
+				if err != nil {
+					log.Printf("send error")
+				}
 			}
+			if s.Err() != nil {
+				log.Fatalf("some error %v", s.Err())
+			}
+			_ = stream.CloseSend()
 		}
-		if s.Err() != nil {
-			log.Fatalf("some error %v", s.Err())
+	}()
+	for transferData {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil || !(msg == nil || msg.Value == nil) {
+			log.Print("something went wrong")
 		}
 	}
 	featureTime, _ := time.Parse(time.RFC3339, "2018-07-04T19:01:12.324000Z")
 	timePrefix := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timePrefix, uint64(featureTime.Unix()))
-	keyPrefix := hex.EncodeToString(timePrefix)[:6] //remove a prefix value
-	stream, err := client.ReadRange(ctx, &ld_proto.KeyRange{
-		Prefix: keyPrefix,
-	})
+	//keyPrefix := hex.EncodeToString(timePrefix)[:5] //remove a prefix value
+	readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	count := 0
 	for {
-		feature, err := stream.Recv()
+		feature, err := readStream.Recv()
 		if err == io.EOF {
 			break
 		}
@@ -88,6 +98,7 @@ func keyFromMessage(feature *ld_proto.Feature) string {
 	featureTime, _ := time.Parse(time.RFC3339, feature.Properties.Observed)
 	timePrefix := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timePrefix, uint64(featureTime.Unix()))
-	timeGeoHashPrefix := hex.EncodeToString(timePrefix) + geoHash
-	return fmt.Sprintf("%s%d%f", timeGeoHashPrefix, feature.Properties.Type, feature.Properties.Amp)
+	timeGeoHashPrefix := hex.EncodeToString(timePrefix)[:8] + geoHash
+	amp := int(feature.Properties.Amp * 10)
+	return fmt.Sprintf("%s%d%d", timeGeoHashPrefix, feature.Properties.Type, amp)
 }
