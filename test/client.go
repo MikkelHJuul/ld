@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	start := time.Now()
 	conn, err := grpc.Dial("localhost:5326", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("fail to dial: %v", err)
@@ -78,7 +79,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	count := 0
+	features := make([]*ld_proto.KeyValue, 56000)
 	for {
 		feature, err := readStream.Recv()
 		if err == io.EOF {
@@ -87,10 +88,9 @@ func main() {
 		if err != nil {
 			log.Print(err)
 		}
-		log.Printf("%s", feature.Key)
-		count++
+		features = append(features, feature)
 	}
-	log.Printf("returned %d records", count)
+	log.Printf("returned %d records, in %s seconds", len(features), time.Since(start))
 }
 
 func keyFromMessage(feature *ld_proto.Feature) string {
