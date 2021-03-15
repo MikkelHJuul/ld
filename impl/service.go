@@ -115,20 +115,22 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 		if err != nil {
 			return err
 		}
-		go func() {
-			err := sendKeyValue(out, txn, key)
-			if err == badger.ErrTxnTooBig {
-				err = txn.Commit()
-				if err != nil {
-					log.Print(err) //uncommitted read-transaction... hope it is fine
-				}
-				if err = sendKeyValue(out, txn, key); err != nil {
-					log.Print("could not finish transaction after failure")
-				}
-			}
-		}()
+		go l.sendKeyWith(out, txn, key)
 	}
 	return nil
+}
+
+func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) {
+	err := sendKeyValue(out, txn, key)
+	if err == badger.ErrTxnTooBig {
+		err = txn.Commit()
+		if err != nil {
+			log.Print(err) //uncommitted read-transaction... hope it is fine
+		}
+		if err = sendKeyValue(out, txn, key); err != nil {
+			log.Print("could not finish transaction after failure")
+		}
+	}
 }
 
 func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
@@ -142,45 +144,30 @@ func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
 	return err
 }
 
-//fix after this!
-
 func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
 		log.Printf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
 		return err
 	}
-	chMatches := make(chan []byte)
+	chKeyMatches := make(chan *pb.Key)
+	out := make(chan *pb.KeyValue)
 
 	go func() {
-		select {
-		case key := <-chMatches:
-			txn := l.DB.NewTransaction(false)
-			defer txn.Discard()
-			item, err := txn.Get(key)
-			if err == badger.ErrTxnTooBig {
-				if err = txn.Commit(); err != nil {
-					log.Print("error while commit too large transaction early", err)
-				}
-				txn = l.DB.NewTransaction(false)
-				if item, err = txn.Get(key); err != nil {
-					log.Print("could not fetch value for key", err)
-				}
-			}
-			if item != nil {
-				itemVal, err := item.ValueCopy(nil)
-				if err != nil {
-					log.Print("could not copy value of the item", err)
-				}
-				if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
-					log.Print("error sending the KeyValue object", err)
-				}
-			}
-			err = txn.Commit()
-			if err != nil {
-				log.Printf("could not commit transaction")
+		for kv := range out {
+			if err := server.Send(kv); err != nil {
+				log.Print(err)
 			}
 		}
+	}()
+
+	go func() {
+		txn := l.DB.NewTransaction(false)
+		defer txn.Commit()
+		for key := range chKeyMatches {
+			go l.sendKeyWith(out, txn, key)
+		}
+		close(out)
 	}()
 
 	if err = l.DB.View(func(txn *badger.Txn) error {
@@ -192,10 +179,10 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 		for iter.Rewind(); iter.Valid(); iter.Next() {
 			k := iter.Item().Key()
 			if matcher.Match(k) {
-				chMatches <- k
+				chKeyMatches <- &pb.Key{Key: string(k)}
 			}
 		}
-		close(chMatches)
+		close(chKeyMatches)
 		return nil
 	}); err != nil {
 		log.Print("error finding keys", err)
@@ -204,50 +191,77 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	return nil
 }
 
-func (l ldService) Delete(ctx context.Context, key *pb.Key) (*pb.KeyValue, error) {
-	kv, err := l.Get(ctx, key) // prefer more read-operations
-	if err != nil || kv.Value == nil {
-		return nil, err
-	}
-	err = l.DB.Update(func(txn *badger.Txn) error {
+func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
+	var value []byte
+	err := l.DB.Update(func(txn *badger.Txn) (err error) {
+		value, err = readSingleFromKey(txn, key)
+		if err != nil {
+			return
+		}
 		return txn.Delete([]byte(key.Key))
 	})
 	if err != nil {
 		log.Printf("error while deleting data in database: %v ", err)
 		return nil, err
 	}
-	return kv, nil
+	return &pb.KeyValue{Key: key.Key, Value: value}, nil
 }
 
 func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
+	out := make(chan *pb.KeyValue)
+	keys := make(chan *pb.Key)
+
+	//go routine that just sends!
+	go func() {
+		for kv := range out {
+			if err := server.Send(kv); err != nil {
+				log.Print(err)
+			}
+		}
+	}()
+
+	go func() {
+		txn := l.DB.NewTransaction(true)
+		defer txn.Commit()
+		for k := range keys {
+			var value []byte
+			value, err := readSingleFromKey(txn, k)
+			//log...
+			if err == badger.ErrKeyNotFound {
+				out <- &pb.KeyValue{}
+				continue //skip log -- implement debug log
+			}
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			if err = txn.Delete([]byte(k.Key)); err == badger.ErrTxnTooBig {
+				err = txn.Commit()
+				if err != nil {
+					log.Print(err) //uncommitted read-transaction... hope it is fine
+				}
+				if err = txn.Delete([]byte(k.Key)); err != nil {
+					log.Print(err)
+				}
+			}
+			if err != nil {
+				log.Print("could not delete record", err)
+			}
+			out <- &pb.KeyValue{Key: k.Key, Value: value}
+		}
+		close(out)
+	}()
+
 	for {
 		key, err := server.Recv()
 		if err == io.EOF {
+			close(keys)
 			break
 		}
 		if err != nil {
 			return err
 		}
-		kv, err := l.Get(server.Context(), key) // prefer more read-operations
-		if err != nil {
-			return err
-		}
-		if kv.Value == nil {
-			if err = server.Send(&pb.KeyValue{Key: key.Key}); err != nil {
-				return err
-			}
-			continue
-		}
-		err = l.DB.Update(func(txn *badger.Txn) error {
-			return txn.Delete([]byte(key.Key))
-		})
-		if err != nil {
-			log.Printf("error while deleting data in database: %v", err)
-			return err
-		}
-		if err = server.Send(kv); err != nil {
-			return err
-		}
+		keys <- key
 	}
 	return nil
 }
@@ -255,10 +269,44 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
+		log.Printf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
 		return err
 	}
-	chMatches := make(chan []byte)
-	go l.DB.View(func(txn *badger.Txn) error {
+	chKeyMatches := make(chan *pb.Key)
+	out := make(chan *pb.KeyValue)
+
+	go func() {
+		for kv := range out {
+			if err := server.Send(kv); err != nil {
+				log.Print(err)
+			}
+		}
+	}()
+
+	go func() {
+		txn := l.DB.NewTransaction(true)
+		defer txn.Commit()
+		for key := range chKeyMatches {
+			value, err := readSingleFromKey(txn, key)
+			if err == badger.ErrKeyNotFound {
+				out <- &pb.KeyValue{}
+				err = nil
+			}
+			if err != nil {
+				return
+			}
+			err = txn.Delete([]byte(key.Key))
+			if err != nil {
+				out <- &pb.KeyValue{}
+				log.Print("error when deleting record", err)
+				continue
+			}
+			out <- &pb.KeyValue{Key: key.Key, Value: value}
+		}
+		close(out)
+	}()
+
+	if err = l.DB.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
@@ -267,48 +315,13 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		for iter.Rewind(); iter.Valid(); iter.Next() {
 			k := iter.Item().Key()
 			if matcher.Match(k) {
-				chMatches <- k
+				chKeyMatches <- &pb.Key{Key: string(k)}
 			}
 		}
-		close(chMatches)
+		close(chKeyMatches)
 		return nil
-	})
-	txn := l.DB.NewTransaction(true)
-	defer txn.Discard()
-	for key := range chMatches {
-		item, err := txn.Get(key)
-		if err == badger.ErrTxnTooBig {
-			if err = txn.Commit(); err != nil {
-				return err
-			}
-			txn = l.DB.NewTransaction(true)
-			item, err = txn.Get(key)
-			if err != nil {
-				return err
-			}
-		}
-		if err := txn.Delete(key); err == badger.ErrTxnTooBig {
-			if err = txn.Commit(); err != nil {
-				return err
-			}
-			txn = l.DB.NewTransaction(true)
-			if err = txn.Delete(key); err != nil {
-				return err
-			}
-		}
-		var itemVal []byte
-		if item != nil {
-			itemVal, err = item.ValueCopy(nil)
-			if err != nil {
-				return err
-			}
-		}
-		if err = server.Send(&pb.KeyValue{Key: string(key), Value: itemVal}); err != nil {
-			return err
-		}
-	}
-	err = txn.Commit()
-	if err != nil {
+	}); err != nil {
+		log.Print("error finding keys", err)
 		return err
 	}
 	return nil
