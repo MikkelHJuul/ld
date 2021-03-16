@@ -14,7 +14,7 @@ type Iterator interface {
 }
 
 type badgerPrefixIterator struct {
-	*badger.Iterator
+	badger.Iterator
 	prefix []byte
 }
 
@@ -39,17 +39,17 @@ func (b *badgerFromToIterator) Valid() bool {
 func keyRangeIterator(it *badger.Iterator, keyRange *proto.KeyRange) Iterator {
 	if keyRange.Prefix+keyRange.From+keyRange.To != "" {
 		from, to := keyRange.Prefix, keyRange.Prefix
-		if keyRange.Prefix < keyRange.From {
+		if keyRange.From != "" && keyRange.Prefix < keyRange.From {
 			from = keyRange.From
 		}
-		if keyRange.Prefix > keyRange.To {
+		if keyRange.To != "" && keyRange.Prefix > keyRange.To {
 			to = keyRange.To
 		}
 		if from == to {
-			return &badgerPrefixIterator{it, []byte(from)} //faster than from-to Iteration
+			return &badgerPrefixIterator{*it, []byte(from)} //faster than from-to Iteration
 		}
 		return &badgerFromToIterator{
-			badgerPrefixIterator: badgerPrefixIterator{it, []byte(from)},
+			badgerPrefixIterator: badgerPrefixIterator{*it, []byte(from)},
 			to:                   []byte(to),
 		}
 	}
