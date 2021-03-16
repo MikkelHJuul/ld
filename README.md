@@ -16,7 +16,7 @@ I will not support other ways of downloading.
 As always you can simply `go build`
 
 ## Implementation
-This project exposes badgerDB. You should be able to use the badgerDB CLI-tools on the database. 
+This project exposes [badgerDB](https://github.com/dgraph-io/badger). You should be able to use the badgerDB CLI-tools on the database. 
 
 ## API
 Hashmap Get-Set-Delete semantics! With bidirectional streaming rpc's. No lists, because aggregation of data should be kept at a minimum.
@@ -33,8 +33,9 @@ CRUD operations must be implemented client side, use `Get -> [decision] -> Set` 
     Create      Get -> if {empty response} -> Set
     Update      Get -> if {non-empty} -> [map?] -> Set
 ```
+To have done this server side would cause so much friction. All embeddable key-value databases, to my knowledge, implement Get-Set-Delete semantics, so whether you go with [bolt](https://github.com/boltdb/bolt)/[bbolt](https://github.com/etcd-io/bbolt) or badger you would always end up having this friction; so naturally you implement it without CRUD-semantics. Implementing a concurrent `GetMany`/`SetMany` ping-pong client-service feels a lot more elegant anyways.
 
-##Configuration
+## Configuration
 via flags or environment variables:
 ```text
 flag            ENV             default     description
@@ -59,3 +60,5 @@ This way you could use it to store dynamically typed objects using `Any`. Or you
 `ProfaneDB` uses an inbuilt extension for its `.proto`. pro: you can use their `.proto` file as is. con: google's Any-type is just like map, and requires the implementer to send type-knowledge on each object on the wire.
 
 `ld` use the underlying protocol buffers encoding design, con: this force the implementer to edit their `.proto` file, which is an anti-pattern. pro: while the database will not know anything about the value it saves, the type will be packed binary and can be serialised.
+
+`ld` support bulk operations (via stream methods) natively. `ProfaneDB` via a repeated nested object, Memory-wise, streaming is preferred.
