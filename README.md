@@ -19,11 +19,20 @@ As always you can simply `go build`
 This project exposes badgerDB. You should be able to use the badgerDB CLI-tools on the database. 
 
 ## API
-CRUD! With bidirectional streaming rpc's. No lists, because aggregation of data should be kept at a minimum.
-Update is implemented as upsert.
-The APIs for read and delete further implement unidirectional server-side streams for querying via `KeyRange`.
+Hashmap Get-Set-Delete semantics! With bidirectional streaming rpc's. No lists, because aggregation of data should be kept at a minimum.
+The APIs for get and delete further implement unidirectional server-side streams for querying via `KeyRange`.
 
-see [test](test) for client implementations
+See [test](test) for client implementations, the testing package builds on the data from [DMI - Free data initiative](https://confluence.govcloud.dk/display/FDAPI) (specifically the lightning data set), 
+but can easily be changed to ingest other data, ingestion and read separated into two different clients. 
+
+(Note, loading the 9 mil datapoints for [lightning](https://confluence.govcloud.dk/pages/viewpage.action?pageId=37355752) from a downloaded unzipped line-delimited json-file takes about 2.5 mins)
+
+### CRUD
+CRUD operations must be implemented client side, use `Get -> [decision] -> Set` to implement create or update, the way you want to. fx 
+```text
+    Create      Get -> if {empty response} -> Set
+    Update      Get -> if {non-empty} -> [map?] -> Set
+```
 
 ##Configuration
 via flags or environment variables:
@@ -38,5 +47,15 @@ in-mem          IN_MEM          false       save data in memory (or not)
 The API is expandable. Because of how gRPC encoding works you can replace the `bytes` type `value` tag on the client side with whatever you want.
 This way you could use it to store dynamically typed objects using `Any`. Or you can save and query the database with a fixed type.
 
-## Testing keys
-I have exposed the primary mechanism for matching the key via the structure `data.KeyRangeWrapper.Match(string)`
+### Comparison to [ProfaneDB](https://gitlab.com/ProfaneDB/ProfaneDB)
+`ProfaneDB` uses field options to find your object's key, and can ingest a list (repeated), your key can be composite, and you don't have to think about your key. (I envy the design a bit (it's shiny), but then again I don't feel like that is the best design).
+
+`ld` forces you to design your key, and force single-object(no-aggregation/non-repeated) thinking.
+
+`ProfaneDB` does not support any type of non-singular key queries; you will have to build query objects with very high knowledge of your keys (specific keys). This may force you to make fewer keys, and do more work in the client. (you may end up searching for a needle in a haystack, or completely loosing a key)
+
+`ld` supports `KeyRange`s, you can then make very specific keys, and more of them, and think about the key-design, and query that via, `From`, `To`, `Prefix` and/or `Pattern` syntax.
+
+`ProfaneDB` uses an inbuilt extension for its `.proto`. pro: you can use their `.proto` file as is. con: google's Any-type is just like map, and requires the implementer to send type-knowledge on each object on the wire.
+
+`ld` use the underlying protocol buffers encoding design, con: this force the implementer to edit their `.proto` file, which is an anti-pattern. pro: while the database will not know anything about the value it saves, the type will be packed binary and can be serialised.
