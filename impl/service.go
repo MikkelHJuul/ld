@@ -156,6 +156,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	}
 	chKeyMatches := make(chan *pb.Key)
 	out := make(chan *pb.KeyValue)
+	done := make(chan int)
 
 	go func() {
 		for kv := range out {
@@ -163,6 +164,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 				log.Print(err)
 			}
 		}
+		done <- 1
 	}()
 
 	go func() {
@@ -195,6 +197,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 		return err
 	}
 	close(chKeyMatches)
+	<-done
 	return nil
 }
 
@@ -281,6 +284,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 	}
 	chKeyMatches := make(chan *pb.Key)
 	out := make(chan *pb.KeyValue)
+	done := make(chan int)
 
 	go func() {
 		for kv := range out {
@@ -288,6 +292,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 				log.Print(err)
 			}
 		}
+		done <- 1
 	}()
 
 	go func() {
@@ -325,11 +330,12 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 				chKeyMatches <- &pb.Key{Key: string(k)}
 			}
 		}
-		close(chKeyMatches)
 		return nil
 	}); err != nil {
 		log.Print("error finding keys", err)
 		return err
 	}
+	close(chKeyMatches)
+	<-done
 	return nil
 }
