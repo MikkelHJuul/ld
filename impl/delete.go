@@ -8,6 +8,9 @@ import (
 	"log"
 )
 
+// Delete implements the RPC method of proto.LdServer.
+// returns the deleted KeyValue or nil for no such key
+// todo atm returns nil for any error
 func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
 	err := l.DB.Update(func(txn *badger.Txn) (err error) {
@@ -24,9 +27,11 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 	return &pb.KeyValue{Key: key.Key, Value: value}, nil
 }
 
+// DeleteMany implements the relevant RPC of proto.LdServer
 func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 	out := make(chan *pb.KeyValue)
 	keys := make(chan *pb.Key)
+	done := make(chan int)
 
 	//go routine that just sends!
 	go func() {
@@ -35,6 +40,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 				log.Print(err)
 			}
 		}
+		done <- 1
 	}()
 
 	go func() {
@@ -80,6 +86,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 		}
 		keys <- key
 	}
+	<-done
 	return nil
 }
 

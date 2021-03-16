@@ -21,6 +21,7 @@ func (l ldService) Set(_ context.Context, value *pb.KeyValue) (*pb.KeyValue, err
 
 func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 	in := make(chan *pb.KeyValue)
+	done := make(chan int)
 	out := l.setManyGenerator(in)
 	go func() {
 		for kv := range out {
@@ -28,6 +29,7 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 				log.Print(err)
 			}
 		}
+		done <- 1
 	}()
 	for {
 		create, err := server.Recv()
@@ -40,5 +42,6 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 		}
 		in <- create
 	}
+	<-done
 	return nil
 }

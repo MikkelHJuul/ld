@@ -26,12 +26,14 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	txn := l.DB.NewTransaction(false)
 	defer txn.Commit()
 	out := make(chan *pb.KeyValue)
+	done := make(chan int)
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
 				log.Print(err)
 			}
 		}
+		done <- 1
 	}()
 	wg := &sync.WaitGroup{}
 	for {
@@ -47,6 +49,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 		wg.Add(1)
 		go l.sendKeyWith(out, txn, wg, key)
 	}
+	<-done
 	return nil
 }
 
