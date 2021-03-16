@@ -1,6 +1,6 @@
 # ld
-Lean database - it's a simple-database, it's just an `rpc`-based server with basic CRUD.
-which can ingest any `value` and store it at a `key`, it only supports rpc, via `gRPC`. The encoded binary message 
+Lean database - it's a simple-database, it's just an `rpc`-based server with basic Get/Set/Delete operations.
+The database can ingest any `value` and store it at a `key`, it only supports rpc, via `gRPC`. The encoded binary message 
 is stored, and served without touching the value on the server-side. To that end it is mostly a `gRPC`-cache, 
 but I intend it to be a more general building block.
 
