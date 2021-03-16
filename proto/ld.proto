@@ -6,27 +6,33 @@ package ld.proto;
 option go_package = "github.com/MikkelHJuul/ld/proto";
 option java_package = "com.github.mikkelhjuul.ld.proto";
 
-//the service `ld` is a database. As you can see it does one thing. CRUD!
+//the service `ld` is a database. As you can see it does one thing. Get-Set-Delete!
+// RPCs Suffixed, `Many`, are one-one bidirectional stream; order is not necessarily preserved
 service ld {
     //empty response means success
-    //the database returns your KeyValue for errors, order is not necessarily preserved
+    //the database returns your KeyValue for errors
     rpc Set(KeyValue) returns (KeyValue);
     rpc SetMany(stream KeyValue) returns (stream KeyValue);
 
+    //empty responses means no such key.
     rpc Get(Key) returns (KeyValue);
     rpc GetMany(stream Key) returns (stream KeyValue);
     rpc GetRange(KeyRange) returns (stream KeyValue);
 
+    //returns the deleted object, empty means no such key
     rpc Delete(Key) returns (KeyValue);
     rpc DeleteMany(stream Key) returns (stream KeyValue);
+
     rpc DeleteRange(KeyRange) returns (stream KeyValue);
 
-    //possibly add signatures DoMany(KeyList) returns (stream KeyValue) because there are transaction-benefits to that.
 }
 
 //The Key when querying directly for it
+//The Key in general could be any bytes, but pattern-scanning requires string,
+//so I have decided to increase the requirements in order to add the convenience
+//of pattern-searching.
 message Key {
-    string key = 1;  // [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  // https://tools.ietf.org/html/rfc3986//section-2.3
+    string key = 1;
 }
 
 //A key-range is the only possibility of querying the data outside of a direct Key.
@@ -39,15 +45,18 @@ message KeyRange {
     // ie. a prefix "jo" could be used to speed up query speed of
     //     pattern "john*" or from: "john1" to: "john6"
     //the server will not try to guess a prefix from the pattern or from-to parameters
+    //pattern-searching is the slowest operation.
+    //pattern john* is the same as prefix: john, but slower
     string prefix = 1;
 
-    // RE2 style regex, see: https://github.com/google/re2/wiki/Syntax
+    // RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
     string pattern = 2;
 
     // both inclusive
     // required for discrete systems with discrete queries
     //  -- since you cannot reference a value outside of the last/first,
     //     and would then not be able to query the last/first record.
+    //     and +1 semantics on strings don't really work
     string from = 3;
     string to = 4;
 }

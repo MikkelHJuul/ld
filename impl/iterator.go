@@ -6,6 +6,17 @@ import (
 	"github.com/dgraph-io/badger/v3"
 )
 
+// Iterator adds an implementable target for variations of different Iterator's
+// for simplification of functional code, that you can then implement this reduced
+// interface such that primarily methods Rewind and Valid and be overloaded.
+// usage:
+// 		for iterator.Rewind(); iterator.Valid(); iterator.Next() {
+//			iterator.Item()
+//			...
+//		}
+// is a general snippet of code that using this interface may have overloaded
+// ... Rewind to seek to a prefix or a value
+// ... Valid to validate the key is still within bounds using fx bytes.Compare
 type Iterator interface {
 	Rewind()
 	Valid() bool
@@ -36,22 +47,28 @@ func (b *badgerFromToIterator) Valid() bool {
 	return b.Iterator.Valid() && 1 > bytes.Compare(b.Item().Key(), b.to)
 }
 
-func keyRangeIterator(it *badger.Iterator, keyRange *proto.KeyRange) Iterator {
-	if keyRange.Prefix+keyRange.From+keyRange.To != "" {
-		from, to := keyRange.Prefix, keyRange.Prefix
-		if keyRange.From != "" && keyRange.Prefix < keyRange.From {
-			from = keyRange.From
+// KeyRangeIterator returns an Iterator interface implementation, that wraps the badger.Iterator
+// in order to simplify iterating with from-to and/or prefix.
+func KeyRangeIterator(it *badger.Iterator, prefix, from, to string) Iterator {
+	if prefix+from+to != "" {
+		f, t := prefix, prefix
+		if from != "" && prefix < from {
+			f = from
 		}
-		if keyRange.To != "" && keyRange.Prefix > keyRange.To {
-			to = keyRange.To
+		if to != "" && prefix > to {
+			t = to
 		}
-		if from == to {
-			return &badgerPrefixIterator{*it, []byte(from)} //faster than from-to Iteration
+		if f == t {
+			return &badgerPrefixIterator{*it, []byte(f)}
 		}
 		return &badgerFromToIterator{
-			badgerPrefixIterator: badgerPrefixIterator{*it, []byte(from)},
-			to:                   []byte(to),
+			badgerPrefixIterator: badgerPrefixIterator{*it, []byte(f)},
+			to:                   []byte(t),
 		}
 	}
 	return it
+}
+
+func keyRangeIterator(it *badger.Iterator, keyRange *proto.KeyRange) Iterator {
+	return KeyRangeIterator(it, keyRange.Prefix, keyRange.From, keyRange.To)
 }
