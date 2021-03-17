@@ -9,12 +9,16 @@ import (
 	"sync"
 )
 
+// Get implements RPC method Get, returns nil/empty message for no such key.
 func (l ldService) Get(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
 	err := l.DB.View(func(txn *badger.Txn) (err error) {
 		value, err = readSingleFromKey(txn, key)
 		return
 	})
+	if err == badger.ErrKeyNotFound {
+		return &pb.KeyValue{}, nil
+	}
 	if err != nil {
 		log.Printf("error while fetching data from database: %v", err)
 		return nil, err
@@ -22,6 +26,7 @@ func (l ldService) Get(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	return &pb.KeyValue{Key: key.Key, Value: value}, nil
 }
 
+// GetMany implements RPC stream method of the same name from LdServer
 func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	txn := l.DB.NewTransaction(false)
 	defer txn.Commit()
@@ -53,6 +58,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	return nil
 }
 
+// GetRange implements RPC query method from proto.LdServer
 func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {

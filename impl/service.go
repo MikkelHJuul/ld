@@ -46,28 +46,3 @@ func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
 	out <- &pb.KeyValue{Key: key.Key, Value: value}
 	return err
 }
-
-func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
-	out := make(chan *pb.KeyValue)
-	go func() {
-		txn := l.DB.NewTransaction(true)
-		for create := range in {
-			if err := txn.Set([]byte(create.Key), create.Value); err == badger.ErrTxnTooBig {
-				err = txn.Commit()
-				if err != nil {
-					log.Print("error when committing transaction in goroutine", err) //probably not?
-				}
-				txn = l.DB.NewTransaction(true)
-				err = txn.Set([]byte(create.Key), create.Value)
-				if err != nil {
-					log.Print("error when setting ", err) //probably not?
-				}
-			}
-		}
-		close(out)
-		if err := txn.Commit(); err != nil {
-			log.Print("error when committing transaction in goroutine", err) //probably not?
-		}
-	}()
-	return out
-}

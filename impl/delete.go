@@ -10,7 +10,6 @@ import (
 
 // Delete implements the RPC method of proto.LdServer.
 // returns the deleted KeyValue or nil for no such key
-// todo atm returns nil for any error
 func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 	var value []byte
 	err := l.DB.Update(func(txn *badger.Txn) (err error) {
@@ -20,6 +19,9 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 		}
 		return txn.Delete([]byte(key.Key))
 	})
+	if err == badger.ErrKeyNotFound {
+		return nil, nil
+	}
 	if err != nil {
 		log.Printf("error while deleting data in database: %v ", err)
 		return nil, err
@@ -90,6 +92,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 	return nil
 }
 
+// DeleteRange implements delete functionality for a query object to fulfill interface method from proto.LdServer
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
