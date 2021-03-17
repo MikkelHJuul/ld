@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/MikkelHJuul/ld/impl"
 	"github.com/MikkelHJuul/ld/proto"
+	log "github.com/sirupsen/logrus"
 
 	"flag"
-	"fmt"
 	"google.golang.org/grpc"
 	"net"
 	"os"
@@ -26,18 +26,20 @@ func lookupEnvOrString(key string, defaultVal string) string {
 
 func main() {
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:"+*port))
+	lis, err := net.Listen("tcp", "localhost:"+*port)
 	if err != nil {
-		_ = fmt.Errorf("failed to listen: %v", err)
-		os.Exit(1)
+		log.Fatalf("failed to listen: %v", err)
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	server := impl.NewServer(*mem)
-	defer server.Close()
+	defer func() {
+		if err := server.Close(); err != nil {
+			log.Error("error when closing the database", err)
+		}
+	}()
 	proto.RegisterLdServer(grpcServer, server)
 	if err := grpcServer.Serve(lis); err != nil {
-		_ = fmt.Errorf("server exited with error: %v", err)
-		os.Exit(1)
+		log.Fatalf("server exited with error: %v", err)
 	}
 }
