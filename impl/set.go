@@ -2,10 +2,11 @@ package impl
 
 import (
 	"context"
+	"io"
+
 	pb "github.com/MikkelHJuul/ld/proto"
 	"github.com/dgraph-io/badger/v3"
-	"io"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 // Set implements method Set from proto.LdServer. returns nothing for succes, the value and error for any error.
@@ -14,7 +15,7 @@ func (l ldService) Set(_ context.Context, value *pb.KeyValue) (*pb.KeyValue, err
 		return txn.Set([]byte(value.Key), value.Value)
 	})
 	if err != nil {
-		log.Printf("error while saving data to database: %v ", err)
+		log.Errorf("error while saving data to database: %v ", err)
 		return value, err
 	}
 	return nil, nil
@@ -28,7 +29,7 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
-				log.Print(err)
+				log.Warn(err)
 			}
 		}
 		done <- 1
@@ -56,12 +57,12 @@ func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
 			if err := txn.Set([]byte(create.Key), create.Value); err == badger.ErrTxnTooBig {
 				err = txn.Commit()
 				if err != nil {
-					log.Print("error when committing transaction in goroutine", err) //probably not?
+					log.Warn("error when committing transaction in goroutine", err) //probably not?
 				}
 				txn = l.DB.NewTransaction(true)
 				err = txn.Set([]byte(create.Key), create.Value)
 				if err != nil {
-					log.Print("error when setting ", err)
+					log.Warn("error when setting after fallback", err)
 				}
 			} else if err != nil {
 				out <- create
@@ -70,7 +71,7 @@ func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
 		}
 		close(out)
 		if err := txn.Commit(); err != nil {
-			log.Print("error when committing transaction in goroutine", err) //probably not?
+			log.Warn("error when committing transaction in goroutine", err) //probably not?
 		}
 	}()
 	return out

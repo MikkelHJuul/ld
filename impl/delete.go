@@ -2,10 +2,11 @@ package impl
 
 import (
 	"context"
+	"io"
+
 	pb "github.com/MikkelHJuul/ld/proto"
 	"github.com/dgraph-io/badger/v3"
-	"io"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 // Delete implements the RPC method of proto.LdServer.
@@ -23,7 +24,7 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 		return nil, nil
 	}
 	if err != nil {
-		log.Printf("error while deleting data in database: %v ", err)
+		log.Errorf("error while deleting data in database: %v ", err)
 		return nil, err
 	}
 	return &pb.KeyValue{Key: key.Key, Value: value}, nil
@@ -39,7 +40,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
-				log.Print(err)
+				log.Warn(err)
 			}
 		}
 		done <- 1
@@ -51,26 +52,25 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 		for k := range keys {
 			var value []byte
 			value, err := readSingleFromKey(txn, k)
-			//log...
 			if err == badger.ErrKeyNotFound {
 				out <- &pb.KeyValue{}
-				continue //skip log -- implement debug log
+				continue
 			}
 			if err != nil {
-				log.Print(err)
+				log.Info("error reading before delete", err)
 				continue
 			}
 			if err = txn.Delete([]byte(k.Key)); err == badger.ErrTxnTooBig {
 				err = txn.Commit()
 				if err != nil {
-					log.Print(err) //uncommitted read-transaction... hope it is fine
+					log.Warn(err)
 				}
 				if err = txn.Delete([]byte(k.Key)); err != nil {
-					log.Print(err)
+					log.Warn(err)
 				}
 			}
 			if err != nil {
-				log.Print("could not delete record", err)
+				log.Info("could not delete record", err)
 			}
 			out <- &pb.KeyValue{Key: k.Key, Value: value}
 		}
@@ -84,6 +84,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			break
 		}
 		if err != nil {
+			log.Warn("error from Ld_DeleteManyServer", err)
 			return err
 		}
 		keys <- key
@@ -96,7 +97,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
-		log.Printf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
+		log.Debugf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
 		return err
 	}
 	chKeyMatches := make(chan *pb.Key)
@@ -106,7 +107,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
-				log.Print(err)
+				log.Info(err)
 			}
 		}
 		done <- 1
@@ -127,7 +128,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			err = txn.Delete([]byte(key.Key))
 			if err != nil {
 				out <- &pb.KeyValue{}
-				log.Print("error when deleting record", err)
+				log.Info("error when deleting record", err)
 				continue
 			}
 			out <- &pb.KeyValue{Key: key.Key, Value: value}
@@ -149,7 +150,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		}
 		return nil
 	}); err != nil {
-		log.Print("error finding keys", err)
+		log.Warn("error finding keys", err)
 		return err
 	}
 	close(chKeyMatches)

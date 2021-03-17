@@ -2,11 +2,12 @@ package impl
 
 import (
 	"context"
+	"io"
+	"sync"
+
 	pb "github.com/MikkelHJuul/ld/proto"
 	"github.com/dgraph-io/badger/v3"
-	"io"
-	"log"
-	"sync"
+	log "github.com/sirupsen/logrus"
 )
 
 // Get implements RPC method Get, returns nil/empty message for no such key.
@@ -20,7 +21,7 @@ func (l ldService) Get(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 		return &pb.KeyValue{}, nil
 	}
 	if err != nil {
-		log.Printf("error while fetching data from database: %v", err)
+		log.Warnf("error while fetching data from database: %v", err)
 		return nil, err
 	}
 	return &pb.KeyValue{Key: key.Key, Value: value}, nil
@@ -35,7 +36,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
-				log.Print(err)
+				log.Warn(err)
 			}
 		}
 		done <- 1
@@ -49,6 +50,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 			break
 		}
 		if err != nil {
+			log.Warn("error from Ld_GetManyServer", err)
 			return err
 		}
 		wg.Add(1)
@@ -62,7 +64,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
-		log.Printf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
+		log.Debugf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
 		return err
 	}
 	chKeyMatches := make(chan *pb.Key)
@@ -72,7 +74,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
-				log.Print(err)
+				log.Warn(err)
 			}
 		}
 		done <- 1
@@ -104,7 +106,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 		}
 		return nil
 	}); err != nil {
-		log.Print("error finding keys", err)
+		log.Warn("error finding keys", err)
 		return err
 	}
 	close(chKeyMatches)
