@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	port = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
-
-	mem = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
+	port     = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
+	logLevel = flag.String("log-level", lookupEnvOrString("LOG_LEVEL", "INFO"), "configure logging level")
+	mem      = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
@@ -25,6 +25,11 @@ func lookupEnvOrString(key string, defaultVal string) string {
 }
 
 func main() {
+	loggingLevel, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetLevel(loggingLevel)
 	flag.Parse()
 	lis, err := net.Listen("tcp", "localhost:"+*port)
 	if err != nil {
