@@ -1,4 +1,4 @@
 - logging and error handling
 - unit tests?
 - client implementations to test more RPCs
-- client CRUD implementation
+- client CRUD implementation example
