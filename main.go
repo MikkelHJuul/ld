@@ -37,7 +37,7 @@ func main() {
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	server := impl.NewServer(*mem)
+	server := impl.NewServer("ld_badger", *mem)
 	defer func() {
 		if err := server.Close(); err != nil {
 			log.Error("error when closing the database", err)
