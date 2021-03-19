@@ -14,8 +14,8 @@ type ldService struct {
 
 // NewServer opens and returns a badger.DB facade
 // that implements the proto interface proto.LdServer.
-func NewServer(inmem bool) *ldService {
-	db, err := badger.Open(badger.DefaultOptions("ld_badger").WithInMemory(inmem))
+func NewServer(dbLocation string, inmem bool) *ldService {
+	db, err := badger.Open(badger.DefaultOptions(dbLocation).WithInMemory(inmem))
 	if err != nil {
 		log.Fatal(err)
 	}
