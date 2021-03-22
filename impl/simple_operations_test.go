@@ -122,7 +122,7 @@ func TestSetGetDeleteSingles(t *testing.T) {
 	}
 	for _, aCase := range cases {
 		t.Run(aCase.name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("tmp", "ldgsdtest")
+			dir, err := ioutil.TempDir("/tmp", "ldgsdtest")
 			if err != nil {
 				t.Fatal(err)
 			}
