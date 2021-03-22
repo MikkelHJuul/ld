@@ -1,10 +1,12 @@
 package impl
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/MikkelHJuul/ld/proto"
 	"google.golang.org/grpc"
 	"io"
+	"testing"
 )
 
 type testBidiServer struct {
@@ -72,4 +74,44 @@ func oneThroughHundred() []*proto.KeyValue {
 		lst[i] = &proto.KeyValue{Key: k, Value: []byte(k)}
 	}
 	return lst
+}
+
+func NewTestBadger(t *testing.T) *ldService {
+	l := NewServer("", true)
+	err := l.SetMany(NewTestServer(oneThroughHundred()))
+	if err != nil {
+		t.Error("could not initiate test database")
+	}
+	return l
+}
+
+func validateReturn(t *testing.T, expected, got []*proto.KeyValue) {
+	if len(got) != len(expected) {
+		t.Errorf("not the same amount of results, %d =|= %d", len(expected), len(got))
+	}
+	numNils := 0
+	for _, aVal := range got {
+		if aVal == nil {
+			numNils++
+			continue
+		}
+		isThere := false
+		for _, res := range expected {
+			if aVal.Key == res.Key && bytes.Equal(aVal.Value, res.Value) {
+				isThere = true
+				break
+			}
+		}
+		if !isThere {
+			t.Errorf("results are not like! %v != %v", got, expected)
+		}
+	}
+	for _, res := range expected {
+		if res == nil {
+			numNils--
+		}
+	}
+	if numNils != 0 {
+		t.Errorf("incorrect numbers of empty messages as expected")
+	}
 }
