@@ -16,6 +16,7 @@ type ldService struct {
 // that implements the proto interface proto.LdServer.
 func NewServer(dbLocation string, inmem bool) *ldService {
 	if inmem {
+		log.Infof("overwriting db-location: %s, because instance is set to run in-memory", dbLocation)
 		dbLocation = ""
 	}
 	db, err := badger.Open(badger.DefaultOptions(dbLocation).WithInMemory(inmem))
