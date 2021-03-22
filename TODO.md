@@ -1,3 +1,3 @@
-- unit tests?
+- unit tests for streams
 - client implementations to test more RPCs
 - client CRUD implementation example
