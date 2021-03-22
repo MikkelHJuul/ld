@@ -25,33 +25,33 @@ type Iterator interface {
 }
 
 type badgerPrefixIterator struct {
-	badger.Iterator
+	*badger.Iterator
 	prefix []byte
 }
 
 //prefix is used as from
 type badgerFromToIterator struct {
-	badgerPrefixIterator
+	*badgerPrefixIterator
 	to []byte
 }
 
 type badgerFromIterator struct {
-	badgerPrefixIterator
+	*badgerPrefixIterator
 }
 
 type badgerToIterator struct {
-	badgerFromToIterator
+	*badgerFromToIterator
 }
 
 // a badgerPrefixToIterator is simply a FromToIterator,
 //while badgerPrefixFromIterator is slightly faster than
 //a badgerFromToIterator iterator, and the logic wouldn't work anyway
 type badgerPrefixFromIterator struct {
-	badgerPrefixIterator
+	*badgerPrefixIterator
 	from []byte
 }
 
-func (b badgerPrefixFromIterator) Rewind() {
+func (b *badgerPrefixFromIterator) Rewind() {
 	b.Seek(b.from)
 }
 
@@ -86,24 +86,24 @@ func KeyRangeIterator(it *badger.Iterator, prefix, from, to string) Iterator {
 	case prefix+from+to == "":
 		return it
 	case prefix != "" && from+to == "":
-		return &badgerPrefixIterator{*it, []byte(prefix)}
+		return &badgerPrefixIterator{it, []byte(prefix)}
 	case to != "" && prefix+from == "":
-		return &badgerToIterator{badgerFromToIterator{badgerPrefixIterator{*it, nil}, []byte(to)}}
+		return &badgerToIterator{&badgerFromToIterator{&badgerPrefixIterator{it, nil}, []byte(to)}}
 	case from != "" && prefix+to == "":
-		return &badgerFromIterator{badgerPrefixIterator{*it, []byte(from)}}
+		return &badgerFromIterator{&badgerPrefixIterator{it, []byte(from)}}
 	case from != "" && to != "" && prefix == "":
-		return &badgerFromToIterator{badgerPrefixIterator{*it, []byte(from)}, []byte(to)}
+		return &badgerFromToIterator{&badgerPrefixIterator{it, []byte(from)}, []byte(to)}
 	case from == "":
 		lastInPrefix := lastInPrefix(prefix, to)
 		if keyLtEq(lastInPrefix, []byte(to)) {
-			return &badgerPrefixIterator{*it, []byte(prefix)}
+			return &badgerPrefixIterator{it, []byte(prefix)}
 		}
-		return &badgerFromToIterator{badgerPrefixIterator{*it, []byte(prefix)}, []byte(to)}
+		return &badgerFromToIterator{&badgerPrefixIterator{it, []byte(prefix)}, []byte(to)}
 	case to == "":
 		if prefix > from {
-			return &badgerPrefixIterator{*it, []byte(prefix)}
+			return &badgerPrefixIterator{it, []byte(prefix)}
 		}
-		return &badgerPrefixFromIterator{badgerPrefixIterator{*it, []byte(prefix)}, []byte(from)}
+		return &badgerPrefixFromIterator{&badgerPrefixIterator{it, []byte(prefix)}, []byte(from)}
 
 	default: // to != "" && prefix != "" && from != "":
 		f, t := from, to
@@ -113,11 +113,11 @@ func KeyRangeIterator(it *badger.Iterator, prefix, from, to string) Iterator {
 		lastInPrefix := lastInPrefix(prefix, to)
 		if keyLtEq(lastInPrefix, []byte(to)) {
 			if f == prefix {
-				return &badgerPrefixIterator{*it, []byte(prefix)}
+				return &badgerPrefixIterator{it, []byte(prefix)}
 			}
-			return &badgerPrefixFromIterator{badgerPrefixIterator{*it, []byte(prefix)}, []byte(f)}
+			return &badgerPrefixFromIterator{&badgerPrefixIterator{it, []byte(prefix)}, []byte(f)}
 		}
-		return &badgerFromToIterator{badgerPrefixIterator{*it, []byte(f)}, []byte(t)}
+		return &badgerFromToIterator{&badgerPrefixIterator{it, []byte(f)}, []byte(t)}
 	}
 }
 
