@@ -1,3 +1,4 @@
+- make docker work
 - benchmarks
 - client implementations to test more RPCs
 - client CRUD implementation example
