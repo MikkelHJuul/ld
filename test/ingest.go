@@ -23,7 +23,11 @@ func main() {
 	client := ld_proto.NewLdClient(conn)
 	ctx := context.TODO()
 
-	stream, _ := client.SetMany(ctx)
+	stream, err := client.SetMany(ctx)
+
+	if err != nil {
+		log.Fatal("fail", err)
+	}
 
 	go func() {
 		jsonFile, err := os.Open("all.txt")
