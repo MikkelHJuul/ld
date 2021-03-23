@@ -11,16 +11,13 @@ func readSingleFromKey(txn *badger.Txn, key *proto.Key) (value []byte, err error
 
 func readSingle(txn *badger.Txn, key []byte) (value []byte, err error) {
 	value = nil
-	if item, err := readSingleItem(txn, key); err == nil {
+	item, err := readSingleItem(txn, key)
+	if err == nil {
 		return item.ValueCopy(nil)
 	}
 	return
 }
 
 func readSingleItem(txn *badger.Txn, key []byte) (*badger.Item, error) {
-	item, err := txn.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	return item, nil
+	return txn.Get(key)
 }

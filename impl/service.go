@@ -2,10 +2,10 @@ package impl
 
 import (
 	pb "github.com/MikkelHJuul/ld/proto"
-	"log"
-	"sync"
-
 	"github.com/dgraph-io/badger/v3"
+	log "github.com/sirupsen/logrus"
+
+	"sync"
 )
 
 type ldService struct {
@@ -15,6 +15,10 @@ type ldService struct {
 // NewServer opens and returns a badger.DB facade
 // that implements the proto interface proto.LdServer.
 func NewServer(dbLocation string, inmem bool) *ldService {
+	if inmem {
+		log.Infof("ignoring db-location: %s, because instance is set to run in-memory", dbLocation)
+		dbLocation = ""
+	}
 	db, err := badger.Open(badger.DefaultOptions(dbLocation).WithInMemory(inmem))
 	if err != nil {
 		log.Fatal(err)
@@ -28,10 +32,10 @@ func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.
 	if err == badger.ErrTxnTooBig {
 		err = txn.Commit()
 		if err != nil {
-			log.Print(err) //uncommitted read-transaction... hope it is fine
+			log.Warn(err) //uncommitted read-transaction... hope it is fine
 		}
 		if err = sendKeyValue(out, txn, key); err != nil {
-			log.Print("could not finish transaction after failure")
+			log.Error("could not finish transaction after failure")
 		}
 	}
 }
@@ -39,10 +43,18 @@ func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.
 func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
 	var value []byte
 	value, err := readSingleFromKey(txn, key)
-	if err == badger.ErrKeyNotFound {
-		out <- &pb.KeyValue{}
-		err = nil
-	}
-	out <- &pb.KeyValue{Key: key.Key, Value: value}
+	kv, err := decideOutcome(err, key.Key, value)
+	out <- kv
 	return err
+}
+
+func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, nil
+		}
+		log.Warn("error in transaction", err)
+		return nil, err
+	}
+	return &pb.KeyValue{Key: key, Value: value}, nil
 }

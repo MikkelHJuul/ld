@@ -53,7 +53,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			var value []byte
 			value, err := readSingleFromKey(txn, k)
 			if err == badger.ErrKeyNotFound {
-				out <- &pb.KeyValue{}
+				out <- nil
 				continue
 			}
 			if err != nil {
@@ -119,7 +119,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		for key := range chKeyMatches {
 			value, err := readSingleFromKey(txn, key)
 			if err == badger.ErrKeyNotFound {
-				out <- &pb.KeyValue{}
+				out <- nil
 				err = nil
 			}
 			if err != nil {
@@ -127,7 +127,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			}
 			err = txn.Delete([]byte(key.Key))
 			if err != nil {
-				out <- &pb.KeyValue{}
+				out <- nil
 				log.Info("error when deleting record", err)
 				continue
 			}

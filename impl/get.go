@@ -17,14 +17,7 @@ func (l ldService) Get(_ context.Context, key *pb.Key) (*pb.KeyValue, error) {
 		value, err = readSingleFromKey(txn, key)
 		return
 	})
-	if err == badger.ErrKeyNotFound {
-		return &pb.KeyValue{}, nil
-	}
-	if err != nil {
-		log.Warnf("error while fetching data from database: %v", err)
-		return nil, err
-	}
-	return &pb.KeyValue{Key: key.Key, Value: value}, nil
+	return decideOutcome(err, key.Key, value)
 }
 
 // GetMany implements RPC stream method of the same name from LdServer

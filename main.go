@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	port     = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
-	logLevel = flag.String("log-level", lookupEnvOrString("LOG_LEVEL", "INFO"), "configure logging level")
-	mem      = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
+	port       = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
+	dbLocation = flag.String("db-location", lookupEnvOrString("DB_LOCATION", "ld_badger"), "folder location where the database is situated")
+	logLevel   = flag.String("log-level", lookupEnvOrString("LOG_LEVEL", "INFO"), "configure logging level")
+	mem        = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
@@ -37,7 +38,7 @@ func main() {
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	server := impl.NewServer("ld_badger", *mem)
+	server := impl.NewServer(*dbLocation, *mem)
 	defer func() {
 		if err := server.Close(); err != nil {
 			log.Error("error when closing the database", err)
