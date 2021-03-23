@@ -40,9 +40,10 @@ via flags or environment variables:
 ```text
 flag            ENV             default     description
 ------------------------------------------------------------------------------------
-port            PORT            5326        "5326" spells out "lean" in T9 keyboards
-in-mem          IN_MEM          false       save data in memory (or not)
-log-level       LOG_LEVEL       INFO        the logging level of the server
+-port            PORT            5326        "5326" spells out "lean" in T9 keyboards
+-db-location     DB_LOCATION     ld_badger   The folder location where badger stores its database-files
+-in-mem          IN_MEM          false       save data in memory (or not)
+-log-level       LOG_LEVEL       INFO        the logging level of the server
 ```
 
 ### Working with the API
