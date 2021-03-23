@@ -5,15 +5,14 @@ import (
 	"testing"
 )
 
-func Test_ldService_GetMany(t *testing.T) {
-	l := newTestBadger(t)
+func Test_ldService_DeleteMany(t *testing.T) {
 	tests := []struct {
 		name    string
 		server  *testBidiKeyServer
 		results []*proto.KeyValue
 	}{
 		{
-			name: "get some valid keys",
+			name: "delete some valid keys",
 			server: newTestKeyServer([]*proto.Key{
 				{Key: "04"},
 				{Key: "40"},
@@ -30,7 +29,7 @@ func Test_ldService_GetMany(t *testing.T) {
 			},
 		},
 		{
-			name: "get invalid keys",
+			name: "delete invalid keys",
 			server: newTestKeyServer([]*proto.Key{
 				{Key: "99"},
 				{Key: "00"},
@@ -46,24 +45,37 @@ func Test_ldService_GetMany(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		l := newTestBadger(t)
 		t.Run(tt.name, func(t *testing.T) {
+			if err := l.DeleteMany(tt.server); err != nil {
+				t.Errorf("DeleteMany() error = %v", err)
+			}
+			validateReturn(t, tt.results, tt.server.receive)
+			tt.server.receive = []*proto.KeyValue{}
+			tt.server.idx = 0
 			if err := l.GetMany(tt.server); err != nil {
 				t.Errorf("GetMany() error = %v", err)
 			}
-			validateReturn(t, tt.results, tt.server.receive)
+			if len(tt.server.receive) != len(tt.server.send) {
+				t.Errorf("getmany did not return expected number of results, %v", tt.server.receive)
+			}
+			for _, aNil := range tt.server.receive {
+				if aNil != nil {
+					t.Error("GetMany did not return a nil")
+				}
+			}
 		})
 	}
 }
 
-func Test_ldService_GetRange(t *testing.T) {
-	l := newTestBadger(t)
+func Test_ldService_DeleteRange(t *testing.T) {
 	tests := []struct {
 		name     string
 		keyRange *proto.KeyRange
 		response []*proto.KeyValue
 	}{
 		{
-			name:     "get range within",
+			name:     "delete range within",
 			keyRange: &proto.KeyRange{From: "12", To: "17"},
 			response: []*proto.KeyValue{
 				{Key: "12", Value: []byte("12")},
@@ -75,14 +87,14 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get range overlap",
+			name:     "delete range overlap",
 			keyRange: &proto.KeyRange{From: "99", To: "a"},
 			response: []*proto.KeyValue{
 				{Key: "99", Value: []byte("99")},
 			},
 		},
 		{
-			name:     "get prefix",
+			name:     "delete prefix",
 			keyRange: &proto.KeyRange{Prefix: "9"},
 			response: []*proto.KeyValue{
 				{Key: "90", Value: []byte("90")},
@@ -98,7 +110,7 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get prefix From",
+			name:     "delete prefix From",
 			keyRange: &proto.KeyRange{Prefix: "9", From: "92"},
 			response: []*proto.KeyValue{
 				{Key: "92", Value: []byte("92")},
@@ -112,7 +124,7 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get prefix To",
+			name:     "delete prefix To",
 			keyRange: &proto.KeyRange{Prefix: "9", To: "92"},
 			response: []*proto.KeyValue{
 				{Key: "90", Value: []byte("90")},
@@ -121,7 +133,7 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get prefix FromTo",
+			name:     "delete prefix FromTo",
 			keyRange: &proto.KeyRange{Prefix: "9", From: "91", To: "92"},
 			response: []*proto.KeyValue{
 				{Key: "91", Value: []byte("91")},
@@ -129,14 +141,14 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get prefix Pattern",
+			name:     "delete prefix Pattern",
 			keyRange: &proto.KeyRange{Prefix: "9", Pattern: ".2"},
 			response: []*proto.KeyValue{
 				{Key: "92", Value: []byte("92")},
 			},
 		},
 		{
-			name:     "get Pattern",
+			name:     "delete Pattern",
 			keyRange: &proto.KeyRange{Pattern: ".3"},
 			response: []*proto.KeyValue{
 				{Key: "03", Value: []byte("03")},
@@ -152,32 +164,32 @@ func Test_ldService_GetRange(t *testing.T) {
 			},
 		},
 		{
-			name:     "get prefix and from to mismatch",
+			name:     "delete prefix and from to mismatch",
 			keyRange: &proto.KeyRange{Prefix: "9", From: "12", To: "78"},
 			response: []*proto.KeyValue{},
 		},
 		{
-			name:     "get prefix and from to mismatch",
+			name:     "delete prefix and from to mismatch",
 			keyRange: &proto.KeyRange{Prefix: "5", From: "60"},
 			response: []*proto.KeyValue{},
 		},
 		{
-			name:     "get prefix and from to mismatch",
+			name:     "delete prefix and from to mismatch",
 			keyRange: &proto.KeyRange{Prefix: "5", To: "49"},
 			response: []*proto.KeyValue{},
 		},
 		{
-			name:     "get range outside",
+			name:     "delete range outside",
 			keyRange: &proto.KeyRange{From: "a"},
 			response: []*proto.KeyValue{},
 		},
 		{
-			name:     "get range to zero",
+			name:     "delete range to zero",
 			keyRange: &proto.KeyRange{To: "0"},
 			response: []*proto.KeyValue{},
 		},
 		{
-			name:     "get To one",
+			name:     "delete To one",
 			keyRange: &proto.KeyRange{To: "1"},
 			response: []*proto.KeyValue{
 				{Key: "00", Value: []byte("00")},
@@ -194,12 +206,20 @@ func Test_ldService_GetRange(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		l := newTestBadger(t)
 		server := newTestServer(nil)
 		t.Run(tt.name, func(t *testing.T) {
-			if err := l.GetRange(tt.keyRange, server); err != nil {
-				t.Errorf("GetRange() error = %v", err)
+			if err := l.DeleteRange(tt.keyRange, server); err != nil {
+				t.Errorf("DeleteRange() error = %v", err)
 			}
 			validateReturn(t, tt.response, server.receive)
+			getServer := newTestServer(nil)
+			if err := l.GetRange(tt.keyRange, getServer); err != nil {
+				t.Errorf("GetRange() error = %v", err)
+			}
+			if len(getServer.receive) != 0 {
+				t.Errorf("Delete did not remove items, %v", getServer.receive)
+			}
 		})
 	}
 }

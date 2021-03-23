@@ -17,21 +17,21 @@ type testBidiServer struct {
 }
 
 type testBidiKeyServer struct {
-	testBidiServer
-	send []*proto.Key
+	grpc.ServerStream
+	send    []*proto.Key
+	receive []*proto.KeyValue
+	idx     int
 }
 
-func NewTestKeyServer(ks []*proto.Key) *testBidiKeyServer {
+func newTestKeyServer(ks []*proto.Key) *testBidiKeyServer {
 	return &testBidiKeyServer{
-		send: ks,
-		testBidiServer: testBidiServer{
-			receive: make([]*proto.KeyValue, 0),
-			idx:     0,
-		},
+		send:    ks,
+		receive: make([]*proto.KeyValue, 0),
+		idx:     0,
 	}
 }
 
-func NewTestServer(kvs []*proto.KeyValue) *testBidiServer {
+func newTestServer(kvs []*proto.KeyValue) *testBidiServer {
 	return &testBidiServer{
 		send:    kvs,
 		receive: make([]*proto.KeyValue, 0),
@@ -76,9 +76,9 @@ func oneThroughHundred() []*proto.KeyValue {
 	return lst
 }
 
-func NewTestBadger(t *testing.T) *ldService {
+func newTestBadger(t *testing.T) *ldService {
 	l := NewServer("", true)
-	err := l.SetMany(NewTestServer(oneThroughHundred()))
+	err := l.SetMany(newTestServer(oneThroughHundred()))
 	if err != nil {
 		t.Error("could not initiate test database")
 	}

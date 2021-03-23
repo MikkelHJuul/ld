@@ -12,7 +12,7 @@ func Test_ldService_SetMany(t *testing.T) {
 	}{
 		{
 			name: "a simple server",
-			server: NewTestServer([]*proto.KeyValue{
+			server: newTestServer([]*proto.KeyValue{
 				{Key: "1", Value: []byte("1")},
 				{Key: "2", Value: []byte("2")},
 				{Key: "3", Value: []byte("3")},
@@ -22,7 +22,7 @@ func Test_ldService_SetMany(t *testing.T) {
 		},
 		{
 			name: "a simple server re-set key",
-			server: NewTestServer([]*proto.KeyValue{
+			server: newTestServer([]*proto.KeyValue{
 				{Key: "1", Value: []byte("1")},
 				{Key: "1", Value: []byte("1")},
 				{Key: "1", Value: []byte("4")},
