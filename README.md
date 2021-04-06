@@ -15,6 +15,9 @@ The project is written in `golang`. It will be packaged as a `scratch`-container
 I will not support other ways of downloading. 
 As always you can simply `go build`
 
+## Docker images
+images are `mjuul/ld:tags`, `mjuul/ld:tagswclient` and (alpine)`mjuul/ld-client`
+
 ## Implementation
 This project exposes [badgerDB](https://github.com/dgraph-io/badger). You should be able to use the badgerDB CLI-tools on the database. 
 
