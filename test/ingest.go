@@ -30,7 +30,7 @@ func main() {
 	}
 
 	go func() {
-		jsonFile, err := os.Open("all.txt")
+		jsonFile, err := os.Open("2005-04.txt") //or another file
 		if err != nil {
 			log.Fatalf("could not open file!")
 		}

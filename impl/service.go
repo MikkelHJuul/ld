@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"github.com/MikkelHJuul/bIter"
 	pb "github.com/MikkelHJuul/ld/proto"
 	"github.com/dgraph-io/badger/v3"
 	log "github.com/sirupsen/logrus"
@@ -57,4 +58,8 @@ func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
 		return nil, err
 	}
 	return &pb.KeyValue{Key: key, Value: value}, nil
+}
+
+func keyRangeIterator(it *badger.Iterator, keyRange *pb.KeyRange) bIter.Iterator {
+	return bIter.KeyRangeIterator(it, []byte(keyRange.Prefix), []byte(keyRange.From), []byte(keyRange.To))
 }

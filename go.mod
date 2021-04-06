@@ -1,12 +1,11 @@
 module github.com/MikkelHJuul/ld
 
-go 1.14
+go 1.16
 
 require (
+	github.com/MikkelHJuul/bIter v0.0.0-20210406094925-7ee934150a1c
 	github.com/dgraph-io/badger/v3 v3.2011.1
-	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/mmcloughlin/geohash v0.10.0
 	github.com/sirupsen/logrus v1.6.0
-	google.golang.org/grpc v1.32.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/grpc v1.36.0
+	google.golang.org/protobuf v1.26.0
 )

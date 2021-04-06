@@ -25,12 +25,15 @@ const (
 )
 
 //The Key when querying directly for it
+//The Key in general could be any bytes, but pattern-scanning requires string,
+//so I have decided to increase the requirements in order to add the convenience
+//of pattern-searching.
 type Key struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"` // [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  // https://tools.ietf.org/html/rfc3986//section-2.3
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 }
 
 func (x *Key) Reset() {
@@ -86,13 +89,16 @@ type KeyRange struct {
 	// ie. a prefix "jo" could be used to speed up query speed of
 	//     pattern "john*" or from: "john1" to: "john6"
 	//the server will not try to guess a prefix from the pattern or from-to parameters
+	//pattern-searching is the slowest operation.
+	//pattern john* is the same as prefix: john, but slower
 	Prefix string `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
-	// RE2 style regex, see: https://github.com/google/re2/wiki/Syntax
+	// RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
 	Pattern string `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"`
 	// both inclusive
 	// required for discrete systems with discrete queries
 	//  -- since you cannot reference a value outside of the last/first,
 	//     and would then not be able to query the last/first record.
+	//     and +1 semantics on strings don't really work
 	From string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	To   string `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
 }
@@ -389,11 +395,15 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LdClient interface {
+	//empty response means success
+	//the database returns your KeyValue for errors
 	Set(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error)
 	SetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_SetManyClient, error)
+	//empty responses means no such key.
 	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	GetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_GetManyClient, error)
 	GetRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_GetRangeClient, error)
+	//returns the deleted object, empty means no such key
 	Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	DeleteMany(ctx context.Context, opts ...grpc.CallOption) (Ld_DeleteManyClient, error)
 	DeleteRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_DeleteRangeClient, error)
@@ -593,11 +603,15 @@ func (x *ldDeleteRangeClient) Recv() (*KeyValue, error) {
 
 // LdServer is the server API for Ld service.
 type LdServer interface {
+	//empty response means success
+	//the database returns your KeyValue for errors
 	Set(context.Context, *KeyValue) (*KeyValue, error)
 	SetMany(Ld_SetManyServer) error
+	//empty responses means no such key.
 	Get(context.Context, *Key) (*KeyValue, error)
 	GetMany(Ld_GetManyServer) error
 	GetRange(*KeyRange, Ld_GetRangeServer) error
+	//returns the deleted object, empty means no such key
 	Delete(context.Context, *Key) (*KeyValue, error)
 	DeleteMany(Ld_DeleteManyServer) error
 	DeleteRange(*KeyRange, Ld_DeleteRangeServer) error

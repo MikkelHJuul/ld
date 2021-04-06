@@ -1,14 +1,16 @@
 package main
 
 import (
+	"flag"
 	"github.com/MikkelHJuul/ld/impl"
 	"github.com/MikkelHJuul/ld/proto"
 	log "github.com/sirupsen/logrus"
-
-	"flag"
 	"google.golang.org/grpc"
 	"net"
 	"os"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var (
@@ -26,6 +28,9 @@ func lookupEnvOrString(key string, defaultVal string) string {
 }
 
 func main() {
+	go func() {
+		_ = http.ListenAndServe(":6000", nil)
+	}()
 	loggingLevel, err := log.ParseLevel(*logLevel)
 	if err != nil {
 		log.Fatal(err)

@@ -22,11 +22,13 @@ func main() {
 	}
 	defer conn.Close()
 	client := ld_proto.NewLdClient(conn)
-	ctx, cancel := context.WithTimeout(context.TODO(), 120*time.Second)
-	defer cancel()
+	ctx := context.TODO()
+	//defer cancel()
 
 	//timeString := ld_proto.HandmadeTimeKeyString("2018-07-04T19:01:12.324000Z")
-	readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{Prefix: "00511", Pattern: "00511....u2"})
+	//readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{}) //all values
+	//readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{Prefix: "00510"})  // on 2005, between day 100 and 109
+	readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{Prefix: "005100", Pattern: "005100...u2"}) // the 100th day (april 10th) on u2 (geohash)
 	if err != nil {
 		log.Fatal(err)
 	}
