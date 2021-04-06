@@ -7,6 +7,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"google.golang.org/grpc"
+	"io"
 	"time"
 )
 
@@ -149,13 +150,83 @@ func Delete(ctx *grumble.Context) error {
 }
 
 func GetRange(ctx *grumble.Context) error {
-	//TODO
-	ctx.App.Println("unimplemented")
+	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
+	defer cancel()
+	keyRange := &ldProto.KeyRange{
+		Prefix:  ctx.Flags.String("prefix"),
+		Pattern: ctx.Flags.String("pattern"),
+		From:    ctx.Flags.String("from"),
+		To:      ctx.Flags.String("to"),
+	}
+
+	if stream, err := client.GetRange(execCtx, keyRange); err != nil {
+		return err
+	} else {
+		count, err := handleRangeStream(ctx, stream)
+		if err != nil {
+			return err
+		}
+		ctx.App.Println("received messages:", count)
+	}
 	return nil
 }
 
 func DeleteRange(ctx *grumble.Context) error {
-	//TODO
-	ctx.App.Println("unimplemented")
+	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
+	defer cancel()
+	keyRange := &ldProto.KeyRange{
+		Prefix:  ctx.Flags.String("prefix"),
+		Pattern: ctx.Flags.String("pattern"),
+		From:    ctx.Flags.String("from"),
+		To:      ctx.Flags.String("to"),
+	}
+
+	if stream, err := client.DeleteRange(execCtx, keyRange); err != nil {
+		return err
+	} else {
+		count, err := handleRangeStream(ctx, stream)
+		if err != nil {
+			return err
+		}
+		ctx.App.Println("Deleted messages:", count)
+	}
 	return nil
+}
+
+type rangeClient interface {
+	Recv() (*ldProto.KeyValue, error)
+}
+
+func handleRangeStream(ctx *grumble.Context, stream rangeClient) (int, error) {
+	var dMsg *dynamic.Message
+	protofile := ctx.Flags.String("protofile")
+	count := 0
+	for {
+		kv, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return 0, err
+		}
+		if dMsg == nil && protofile != "" {
+			dMsg, err = getProtoMsgAndDecode(kv.Value, protofile, func(b []byte, m *dynamic.Message) error {
+				return m.Unmarshal(b)
+			})
+		}
+		if dMsg != nil {
+			dMsg.Reset()
+			if err := dMsg.Unmarshal(kv.Value); err != nil {
+				return 0, err
+			}
+			jsBytes, err := dMsg.MarshalJSON()
+			if err != nil {
+				return 0, err
+			}
+			kv.Value = jsBytes
+		}
+		_, _ = ctx.App.Println(kv)
+		count++
+	}
+	return count, nil
 }
