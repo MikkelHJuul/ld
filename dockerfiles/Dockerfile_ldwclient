@@ -1,0 +1,3 @@
+FROM ld
+COPY --from=ld-client /ld-client /ld-client
+SHELL ["/ld-client"]
