@@ -39,8 +39,8 @@ func Test_ldService_DeleteMany(t *testing.T) {
 			results: []*proto.KeyValue{
 				{Key: "99", Value: []byte("99")},
 				{Key: "00", Value: []byte("00")},
-				nil,
-				nil,
+				{},
+				{},
 			},
 		},
 	}

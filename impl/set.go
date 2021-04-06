@@ -18,13 +18,13 @@ func (l ldService) Set(_ context.Context, value *pb.KeyValue) (*pb.KeyValue, err
 		log.Errorf("error while saving data to database: %v ", err)
 		return value, err
 	}
-	return nil, nil
+	return &pb.KeyValue{}, nil
 }
 
 // SetMany implements method SetMany from proto.LdServer.
 func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 	in := make(chan *pb.KeyValue)
-	done := make(chan int)
+	ctx, ccl := context.WithCancel(context.Background())
 	out := l.setManyGenerator(in)
 	go func() {
 		for kv := range out {
@@ -32,7 +32,7 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 				log.Warn(err)
 			}
 		}
-		done <- 1
+		ccl()
 	}()
 	for {
 		create, err := server.Recv()
@@ -45,7 +45,7 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 		}
 		in <- create
 	}
-	<-done
+	<-ctx.Done()
 	return nil
 }
 
@@ -66,8 +66,9 @@ func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
 				}
 			} else if err != nil {
 				out <- create
+			} else {
+				out <- &pb.KeyValue{}
 			}
-			out <- nil
 		}
 		close(out)
 		if err := txn.Commit(); err != nil {

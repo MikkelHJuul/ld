@@ -52,7 +52,7 @@ func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
 func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			return nil, nil
+			return &pb.KeyValue{}, nil
 		}
 		log.Warn("error in transaction", err)
 		return nil, err

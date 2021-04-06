@@ -25,14 +25,14 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	txn := l.DB.NewTransaction(false)
 	defer txn.Commit()
 	out := make(chan *pb.KeyValue)
-	done := make(chan int)
+	ctx, ccl := context.WithCancel(context.Background())
 	go func() {
 		for kv := range out {
 			if err := server.Send(kv); err != nil {
 				log.Warn(err)
 			}
 		}
-		done <- 1
+		ccl()
 	}()
 	wg := &sync.WaitGroup{}
 	for {
@@ -49,7 +49,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 		wg.Add(1)
 		go l.sendKeyWith(out, txn, wg, key)
 	}
-	<-done
+	<-ctx.Done()
 	return nil
 }
 
@@ -62,7 +62,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	}
 	chKeyMatches := make(chan *pb.Key)
 	out := make(chan *pb.KeyValue)
-	done := make(chan int)
+	ctx, ccl := context.WithCancel(context.Background())
 
 	go func() {
 		for kv := range out {
@@ -70,7 +70,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 				log.Warn(err)
 			}
 		}
-		done <- 1
+		ccl()
 	}()
 
 	go func() {
@@ -103,6 +103,6 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 		return err
 	}
 	close(chKeyMatches)
-	<-done
+	<-ctx.Done()
 	return nil
 }

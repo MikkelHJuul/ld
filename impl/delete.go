@@ -34,7 +34,7 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 	out := make(chan *pb.KeyValue)
 	keys := make(chan *pb.Key)
-	done := make(chan int)
+	ctx, ccl := context.WithCancel(context.Background())
 
 	//go routine that just sends!
 	go func() {
@@ -43,7 +43,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 				log.Warn(err)
 			}
 		}
-		done <- 1
+		ccl()
 	}()
 
 	go func() {
@@ -89,7 +89,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 		}
 		keys <- key
 	}
-	<-done
+	<-ctx.Done()
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 	}
 	chKeyMatches := make(chan *pb.Key)
 	out := make(chan *pb.KeyValue)
-	done := make(chan int)
+	ctx, ccl := context.WithCancel(context.Background())
 
 	go func() {
 		for kv := range out {
@@ -110,7 +110,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 				log.Info(err)
 			}
 		}
-		done <- 1
+		ccl()
 	}()
 
 	go func() {
@@ -154,6 +154,6 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		return err
 	}
 	close(chKeyMatches)
-	<-done
+	<-ctx.Done()
 	return nil
 }
