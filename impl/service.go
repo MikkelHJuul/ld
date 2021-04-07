@@ -63,3 +63,16 @@ func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
 func keyRangeIterator(it *badger.Iterator, keyRange *pb.KeyRange) bIter.Iterator {
 	return bIter.KeyRangeIterator(it, []byte(keyRange.Prefix), []byte(keyRange.From), []byte(keyRange.To))
 }
+
+func readSingleFromKey(txn *badger.Txn, key *pb.Key) (value []byte, err error) {
+	return readSingle(txn, []byte(key.Key))
+}
+
+func readSingle(txn *badger.Txn, key []byte) (value []byte, err error) {
+	value = nil
+	item, err := txn.Get(key)
+	if err == nil {
+		return item.ValueCopy(nil)
+	}
+	return
+}
