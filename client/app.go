@@ -39,13 +39,14 @@ var setCmd = &grumble.Command{
 
 var getRangeCmd = &grumble.Command{
 	Name: "get-range",
-	Help: "get a range of records",
+	Help: "get a range of records, empty implies all",
 	Flags: func(f *grumble.Flags) {
 		f.String("", "prefix", "", "key prefix")
 		f.String("", "from", "", "scan range from this key, inclusive")
 		f.String("", "to", "", "scan range to this key, inclusive")
 		f.String("", "pattern", "", "key pattern to query using")
 	},
+        Aliases: []string{"getran"}
 	Run: impl.GetRange,
 }
 
@@ -61,13 +62,14 @@ var deleteCmd = &grumble.Command{
 
 var deleteRangeCmd = &grumble.Command{
 	Name: "delete-range",
-	Help: "delete a range of records",
+	Help: "delete a range of records, empty implies all",
 	Flags: func(f *grumble.Flags) {
 		f.String("", "prefix", "", "key prefix")
 		f.String("", "from", "", "scan range from this key, inclusive")
 		f.String("", "to", "", "scan range to this key, inclusive")
 		f.String("", "pattern", "", "key pattern to query using")
 	},
+	Aliases: []string{"delran"},
 	Run: impl.DeleteRange,
 }
 
