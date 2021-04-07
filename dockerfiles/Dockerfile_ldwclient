@@ -1,3 +1,4 @@
-FROM ld
-COPY --from=ld-client /ld-client /ld-client
+FROM ld-client 
+COPY --from=ld /ld /ld
 SHELL ["/ld-client"]
+ENTRYPOINT ["/ld", "&", "/ld-client"]
