@@ -10,8 +10,10 @@ docker build -t ldwclient -f dockerfiles/Dockerfile_ldwclient .
 
 docker tag ld mjuul/ld:"$tag"
 docker tag ld-client mjuul/ld-client:"$client_tag"
-docker tag ldwclient mjuul/ld:"$tag"wclient
+docker tag ld-client mjuul/ld-client:latest
+docker tag ldwclient mjuul/ld:"$tag"-client
 
 docker push mjuul/ld:"$tag"
 docker push mjuul/ld-client:"$client_tag"
-docker push mjuul/ld:"$tag"wclient
+docker push mjuul/ld-client:latest
+docker push mjuul/ld:"$tag"-client
