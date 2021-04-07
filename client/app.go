@@ -5,16 +5,17 @@ import (
 	"github.com/desertbit/grumble"
 )
 
-var app = grumble.New(&grumble.Config{
+var (
+   app = grumble.New(&grumble.Config{
 	Name:        "ld-client",
 	Description: "ld-client is an interactive client and executable to do non-\"client-side\" streaming requests",
         Flags:       func(f *grumble.Flags) {
 	               f.String("t", "target", "localhost:5326", "the target ld server")
 	               f.String("p", "protofile", "", "the protofile to serialize from, if unset plain bytes are posted")
         },
-})
+   })
 
-var getCmd = &grumble.Command{
+    getCmd = &grumble.Command{
 	Name:    "get",
 	Help:    "get a single record",
 	Aliases: []string{"fetch", "read"},
@@ -23,9 +24,9 @@ var getCmd = &grumble.Command{
         },
 	Usage: "get <key>",
 	Run:   impl.Get,
-}
+   }
 
-var setCmd = &grumble.Command{
+    setCmd = &grumble.Command{
 	Name:    "set",
 	Help:    "set a single record",
 	Aliases: []string{"add", "create"},
@@ -35,9 +36,9 @@ var setCmd = &grumble.Command{
 	},
 	Usage: "set <key> <value>",
 	Run:   impl.Set,
-}
+   }
 
-var getRangeCmd = &grumble.Command{
+    getRangeCmd = &grumble.Command{
 	Name: "get-range",
 	Help: "get a range of records, empty implies all",
 	Flags: func(f *grumble.Flags) {
@@ -48,9 +49,9 @@ var getRangeCmd = &grumble.Command{
 	},
         Aliases: []string{"getran"}
 	Run: impl.GetRange,
-}
+   }
 
-var deleteCmd = &grumble.Command{
+    deleteCmd = &grumble.Command{
 	Name:    "delete",
 	Help:    "get a single record",
 	Aliases: []string{"del", "remove", "rem"},
@@ -58,9 +59,9 @@ var deleteCmd = &grumble.Command{
 		a.String("key", "the key to fetch")
 	},
 	Run:   impl.Delete,
-}
+   }
 
-var deleteRangeCmd = &grumble.Command{
+    deleteRangeCmd = &grumble.Command{
 	Name: "delete-range",
 	Help: "delete a range of records, empty implies all",
 	Flags: func(f *grumble.Flags) {
@@ -71,7 +72,19 @@ var deleteRangeCmd = &grumble.Command{
 	},
 	Aliases: []string{"delran"},
 	Run: impl.DeleteRange,
-}
+   }
+
+    Version = "unset"
+
+    versionCmd = &grumble.Command{
+        Name:    "version",
+        Help:    "print version info",
+        Run:     func(ctx *grumble.Contexy) error {
+                   ctx.App.Println("Version:", Version)
+                   return nil 
+        },
+   }
+)
 
 func init() {
 	app.AddCommand(setCmd)
@@ -79,4 +92,5 @@ func init() {
 	app.AddCommand(getRangeCmd)
 	app.AddCommand(deleteCmd)
 	app.AddCommand(deleteRangeCmd)
+	app.AddCommand(versionCmd)
 }
