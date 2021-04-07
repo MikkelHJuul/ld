@@ -5,7 +5,7 @@ client_tag="${2:?no version tag given for client}"
 
 docker build -t base -f dockerfiles/Dockerfile_base .
 docker build -t ld -f dockerfiles/Dockerfile_ld .
-docker build -t ld-client -f dockerfiles/Dockerfile_client .
+docker build --build-arg VERSION="$client_tag" -t ld-client -f dockerfiles/Dockerfile_client .
 docker build -t ldwclient -f dockerfiles/Dockerfile_ldwclient .
 
 docker tag ld mjuul/ld:"$tag"
