@@ -11,4 +11,4 @@ RUN go build -o ld-client .
 
 FROM alpine
 COPY --from=ld-client-builder /build/ld-client /ld-client
-SHELL ["/ld-client"]
+ENTRYPOINT ["/ld-client"]
