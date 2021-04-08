@@ -22,8 +22,7 @@ var (
 		Args: func(a *grumble.Args) {
 			a.String("key", "the key to fetch")
 		},
-		Usage: "get <key>",
-		Run:   impl.Get,
+		Run: impl.Get,
 	}
 
 	setCmd = &grumble.Command{
@@ -34,8 +33,7 @@ var (
 			a.String("key", "the key to fetch")
 			a.String("value", "the value to set, or to serialize if protofile is set")
 		},
-		Usage: "set <key> <value>",
-		Run:   impl.Set,
+		Run: impl.Set,
 	}
 
 	getRangeCmd = &grumble.Command{
