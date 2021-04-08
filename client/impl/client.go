@@ -56,7 +56,7 @@ func exec(ctx *grumble.Context, cmd func(func([]byte, func([]byte, *dynamic.Mess
 	dMsg, kv, err := cmd(func(b []byte, meth func([]byte, *dynamic.Message) error) (*dynamic.Message, error) {
 		return getProtoMsgAndDecode(b, protoFile, meth)
 	})
-	if err != nil {
+	if err != nil || kv == nil {
 		return err
 	}
 	if dMsg != nil {
@@ -69,7 +69,6 @@ func exec(ctx *grumble.Context, cmd func(func([]byte, func([]byte, *dynamic.Mess
 		} else {
 			return err
 		}
-
 	}
 	_, _ = ctx.App.Println(kv)
 	return err
@@ -81,14 +80,15 @@ func Get(ctx *grumble.Context) error {
 	return exec(ctx, func(dynFun func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error) {
 		key := ctx.Args.String("key")
 		val, err := client.Get(execCtx, &ldProto.Key{Key: key})
-		if err != nil {
+		if err != nil || val.Key == "" {
 			return nil, nil, err
 		}
 		dMsg, err := dynFun(val.Value, func(bytes []byte, message *dynamic.Message) error {
 			return message.Unmarshal(bytes)
 		})
 		if err != nil {
-			return nil, nil, err
+			ctx.App.Println("error creating dynamic message")
+			return nil, val, err
 		}
 		if dMsg != nil {
 			msg, err := dMsg.MarshalJSON()
@@ -109,6 +109,10 @@ func Set(ctx *grumble.Context) error {
 		dMsg, err := dynFun(msg, func(bytes []byte, message *dynamic.Message) error {
 			return message.UnmarshalJSON(bytes)
 		})
+		if err != nil {
+			ctx.App.Println("error creating dynamic message")
+			return nil, nil, err
+		}
 		if dMsg != nil {
 			msg, err = dMsg.Marshal()
 			if err != nil {
@@ -129,14 +133,15 @@ func Delete(ctx *grumble.Context) error {
 	defer cancel()
 	return exec(ctx, func(dynFun func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error) {
 		val, err := client.Delete(execCtx, &ldProto.Key{Key: ctx.Args.String("key")})
-		if err != nil {
+		if err != nil || val.Key == "" {
 			return nil, nil, err
 		}
 		dMsg, err := dynFun(val.Value, func(bytes []byte, message *dynamic.Message) error {
 			return message.Unmarshal(bytes)
 		})
 		if err != nil {
-			return nil, nil, err
+			ctx.App.Println("error creating dynamic message")
+			return nil, val, err
 		}
 		if dMsg != nil {
 			msg, err := dMsg.MarshalJSON()
