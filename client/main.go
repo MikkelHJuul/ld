@@ -12,8 +12,7 @@ func main() {
 	shouldRunAndSleep := errLd == nil && isRunning != nil
 	if shouldRunAndSleep {
 		_, _ = os.Create("/ld-is-running")
-		ldArgs := os.Getenv("LD_ARGS")
-		cmnd := exec.Command("/ld", ldArgs)
+		cmnd := exec.Command("/ld")
 		cmnd.Start()
 	}
 	grumble.Main(app)
