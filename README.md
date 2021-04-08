@@ -57,7 +57,9 @@ The container `mjuul/ld:<tag>-client` does not support flags, use environment va
 ### Working with the API
 The API is expandable. Because of how gRPC encoding works you can replace the `bytes` type `value` tag on the client side with whatever you want.
 This way you could use it to store dynamically typed objects using `Any`. Or you can save and query the database with a fixed or reflected type.
+
 The test folder holds two small programs that implements a fixed type: [my_message.proto](test/client-proto/my_message.proto).
+
 The client uses reflection to serialize/deserialize json to a message given a `.proto`-file.
 
 
