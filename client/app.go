@@ -11,7 +11,7 @@ var (
 		Description: "ld-client is an interactive client and executable to do non-\"client-side\" streaming requests",
 		Flags: func(f *grumble.Flags) {
 			f.String("t", "target", "localhost:5326", "the target ld server")
-			f.String("p", "protofile", "", "the protofile to serialize from, if unset plain bytes are posted")
+			f.String("p", "protofile", "", "the protofile to serialize from, if unset plain bytes are sent, and the received values are not marshalled to JSON")
 		},
 	})
 
