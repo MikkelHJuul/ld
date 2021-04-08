@@ -52,7 +52,7 @@ flag            ENV             default     description
 -in-mem          IN_MEM          false       save data in memory (or not)
 -log-level       LOG_LEVEL       INFO        the logging level of the server
 ```
-The container `mjuul/ld:<tag>-client` does not support flags, is environment variables.
+The container `mjuul/ld:<tag>-client` does not support flags, use environment variables.
 
 ### Working with the API
 The API is expandable. Because of how gRPC encoding works you can replace the `bytes` type `value` tag on the client side with whatever you want.
