@@ -1,0 +1,2 @@
+FROM ld-client
+COPY --from=ld /ld /ld
