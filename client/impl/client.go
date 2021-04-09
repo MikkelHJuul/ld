@@ -165,26 +165,19 @@ func Delete(ctx *grumble.Context) error {
 
 // GetRange implements `ld.proto` streaming service rpc `GetRange`
 func GetRange(ctx *grumble.Context) error {
-	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
-	defer cancel()
-	keyRange := &ldProto.KeyRange{
-		Prefix:  ctx.Flags.String("prefix"),
-		Pattern: ctx.Flags.String("pattern"),
-		From:    ctx.Flags.String("from"),
-		To:      ctx.Flags.String("to"),
-	}
-
-	stream, err := client.DeleteRange(execCtx, keyRange); 
-	if err == nil {
-		var count int
-		count, err = handleRangeStream(ctx, stream)
-		ctx.App.Println("received messages:", count)
-	}
-	return err
+	return executeRange(ctx, "Received messages:", func(client ldProto.LdClient, execCtx context.Context, keyRange *ldProto.KeyRange) (rangeClient,  error) {
+		return client.GetRange(execCtx, keyRange)
+	})
 }
 
 // DeleteRange implements `ld.proto` streaming service rpc `DeleteRange`
 func DeleteRange(ctx *grumble.Context) error {
+	return executeRange(ctx, "Deleted messages:", func(client ldProto.LdClient, execCtx context.Context, keyRange *ldProto.KeyRange) (rangeClient,  error) {
+		return client.DeleteRange(execCtx, keyRange)
+	})
+}
+
+func executeRange(ctx *grumble.Context, msg string, ranger func(ldProto.LdClient, context.Context, *ldProto.KeyRange) (rangeClient,  error)) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
 	defer cancel()
 	keyRange := &ldProto.KeyRange{
@@ -194,11 +187,11 @@ func DeleteRange(ctx *grumble.Context) error {
 		To:      ctx.Flags.String("to"),
 	}
 
-	stream, err := client.DeleteRange(execCtx, keyRange); 
+	stream, err := ranger(client, execCtx, keyRange)
 	if err == nil {
 		var count int
 		count, err = handleRangeStream(ctx, stream)
-		ctx.App.Println("Deleted messages:", count)
+		ctx.App.Println(msg, count)
 	}
 	return err
 }
