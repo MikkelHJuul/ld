@@ -1,4 +1,6 @@
 # ld
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld?ref=badge_shield)
+
 Lean database - it's a simple-database, it's just an `rpc`-based server with the basic Get/Set/Delete operations.
 The database can ingest any `value` and store it at a `key`, it only supports rpc, via `gRPC`. The encoded binary message 
 is stored, and served without touching the value on the server-side. To that end it is mostly a `gRPC`-cache, 
@@ -78,6 +80,9 @@ The client uses reflection to serialize/deserialize json to a message given a `.
 
 `ld` support bulk operations (via stream methods) natively. `ProfaneDB` via a repeated nested object, Memory-wise, streaming is preferred.
 
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld?ref=badge_large)
 
 ### TODO
 - benchmarks
