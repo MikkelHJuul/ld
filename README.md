@@ -77,3 +77,7 @@ The client uses reflection to serialize/deserialize json to a message given a `.
 `ld` use the underlying protocol buffers encoding design, con: this force the implementer to edit their `.proto` file, which is an anti-pattern. pro: while the database will not know anything about the value it saves, the type will be packed binary and can be serialised.
 
 `ld` support bulk operations (via stream methods) natively. `ProfaneDB` via a repeated nested object, Memory-wise, streaming is preferred.
+
+
+### TODO
+- benchmarks

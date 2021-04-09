@@ -40,3 +40,8 @@ An example for starting the container with docker would be:
 ❯ docker run -it -v /my/proto/location/:/proto/ mjuul/ld-client -p /proto/my-proto -t some.ld.online
 ```
 this interactive client would be able to serialise json to your `proto.Message` and then to the wire-bytes, sending it to the database, and displaying it on the way out.
+
+
+### TODO
+- tests
+- better protofile handling
