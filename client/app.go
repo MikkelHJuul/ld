@@ -79,6 +79,7 @@ var (
 		Run:     impl.DeleteRange,
 	}
 
+	// Version acts as a target for compile-time linking the project version into the code
 	Version = "unset"
 
 	versionCmd = &grumble.Command{
