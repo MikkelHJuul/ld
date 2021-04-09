@@ -7,8 +7,11 @@ import "regexp"
 type Matcher interface {
 	Match([]byte) bool
 }
+
+// MatcherFunc is any `func([]byte) bool` acting as a named target for implementation
 type MatcherFunc func([]byte) bool
 
+// Match implements interface Matcher for MatcherFunc, delegating to the underlying function
 func (matcher MatcherFunc) Match(b []byte) bool {
 	return matcher(b)
 }
