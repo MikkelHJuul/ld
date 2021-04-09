@@ -1,2 +1,2 @@
 - benchmarks
-- better client error handling
+- client tests 
