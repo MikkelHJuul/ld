@@ -1,21 +1,56 @@
 #!/bin/bash
 
+#./docker_build.bash $(cat ./VERSION) $(./client/VERSION)
+
 tag="${1:?no version tag given}"
 client_tag="${2:?no version tag given for client}"
 
-docker build -t base -f dockerfiles/Dockerfile_base .
-docker build -t ld -f dockerfiles/Dockerfile_ld .
-docker build --build-arg VERSION="$client_tag" -t ld-client -f dockerfiles/Dockerfile_client .
-docker build -t ldwclient -f dockerfiles/Dockerfile_ldwclient .
+tagAndPush() {
+  docker tag "$1" "$2"
+  docker push "$2"
+}
 
-docker tag ld mjuul/ld:"$tag"
-docker tag ldwclient mjuul/ld:"$tag"-client
-docker push mjuul/ld:"$tag"
-docker push mjuul/ld:"$tag"-client
+isThere() {
+  if docker pull "$1" >&- 2>&-; then
+    echo 1
+  else
+    echo 0
+  fi
+}
 
+ldIsThere="$(isThere mjuul/ld:"$tag")"
 
-docker tag ld-client mjuul/ld-client:"$client_tag"
-docker tag ld-client mjuul/ld-client:latest
+if (( ! ldIsThere )); then
+  docker build -t base -f dockerfiles/Dockerfile_base .
+  docker build -t ld -f dockerfiles/Dockerfile_ld .
 
-docker push mjuul/ld-client:"$client_tag"
-docker push mjuul/ld-client:latest
+  if tagAndPush ld mjuul/ld:"$tag"; then
+    echo "pushed ld:$tag to docker-hub"
+  fi
+fi
+
+ldClientIsThere="$(isThere mjuul/ld-client:"$client_tag")"
+
+if (( ! ldClientIsThere )); then
+  docker build --build-arg VERSION="$client_tag" -t ld-client -f dockerfiles/Dockerfile_client .
+
+  if tagAndPush ld-client mjuul/ld-client:"$client_tag"; then
+    echo "pushed ld-client:$client_tag to docker-hub"
+  fi
+
+  if tagAndPush ld-client mjuul/ld-client:latest; then
+    echo "pushed ld-client:latest to docker-hub"
+  fi
+
+  docker build --build-arg LD_VERSION="$tag" -t ldwclient -f dockerfiles/Dockerfile_ldwclient .
+
+  if tagAndPush ldwclient mjuul/ld:"$tag"-client; then
+    echo "pushed ld to docker-hub"
+  fi
+fi
+
+if (( ldIsThere )) && (( ldClientIsThere )); then
+  echo "nothing built"
+  exit 1
+fi
+

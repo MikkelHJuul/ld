@@ -1,2 +1,3 @@
 FROM ld-client
-COPY --from=ld /ld /ld
+ARG LD_VERSION
+COPY --from=mjuul/ld:$LD_VERSION /ld /ld
