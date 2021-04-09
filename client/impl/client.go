@@ -78,6 +78,7 @@ func exec(ctx *grumble.Context, cmd func(func([]byte, func([]byte, *dynamic.Mess
 	return err
 }
 
+// Get implements `ld.proto` service rpc `Get`
 func Get(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
 	defer cancel()
@@ -105,6 +106,8 @@ func Get(ctx *grumble.Context) error {
 	})
 }
 
+
+// Set implements `ld.proto` service rpc `Set`
 func Set(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
 	defer cancel()
@@ -132,6 +135,8 @@ func Set(ctx *grumble.Context) error {
 	})
 }
 
+
+// Delete implements `ld.proto` service rpc `Delete`
 func Delete(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
 	defer cancel()
@@ -158,6 +163,7 @@ func Delete(ctx *grumble.Context) error {
 	})
 }
 
+// GetRange implements `ld.proto` streaming service rpc `GetRange`
 func GetRange(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
 	defer cancel()
@@ -168,18 +174,16 @@ func GetRange(ctx *grumble.Context) error {
 		To:      ctx.Flags.String("to"),
 	}
 
-	if stream, err := client.GetRange(execCtx, keyRange); err != nil {
-		return err
-	} else {
-		count, err := handleRangeStream(ctx, stream)
+	var count int
+	stream, err := client.DeleteRange(execCtx, keyRange); 
+	if err == nil {
+		count, err = handleRangeStream(ctx, stream)
 		ctx.App.Println("received messages:", count)
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+	return err
 }
 
+// DeleteRange implements `ld.proto` streaming service rpc `DeleteRange`
 func DeleteRange(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, time.Minute)
 	defer cancel()
@@ -190,16 +194,13 @@ func DeleteRange(ctx *grumble.Context) error {
 		To:      ctx.Flags.String("to"),
 	}
 
-	if stream, err := client.DeleteRange(execCtx, keyRange); err != nil {
-		return err
-	} else {
-		count, err := handleRangeStream(ctx, stream)
+	var count int
+	stream, err := client.DeleteRange(execCtx, keyRange); 
+	if err == nil {
+		count, err = handleRangeStream(ctx, stream)
 		ctx.App.Println("Deleted messages:", count)
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+	return err
 }
 
 type rangeClient interface {
