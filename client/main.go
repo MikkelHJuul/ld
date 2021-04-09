@@ -7,16 +7,25 @@ import (
 )
 
 func main() {
-	_, errLd := os.Stat("/ld")
+	_, errFindingLd := os.Stat("/ld")
 	_, isRunning := os.Stat("/ld-is-running")
-	shouldRunAndSleep := errLd == nil && isRunning != nil
-	if shouldRunAndSleep {
-		_, _ = os.Create("/ld-is-running")
-		cmnd := exec.Command("/ld")
-		cmnd.Start()
+	var ldCommand *exec.Cmd
+	if errFindingLd == nil && isRunning != nil {
+		_, err := os.Create("/ld-is-running")
+		if err != nil {
+			panic("could not create run-file /ld-is-running")
+		}
+		ldCommand = exec.Command("/ld")
+		err = ldCommand.Start()
+		if err != nil {
+			panic(err)
+		}
 	}
 	grumble.Main(app)
-	if shouldRunAndSleep {
-		select {} //sleep indefinitely (/ld is running) this process is PID 1 so container must have it running!
+	if ldCommand != nil {
+		err := ldCommand.Wait()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
