@@ -2,19 +2,23 @@ package impl
 
 import (
 	"context"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	ldProto "github.com/MikkelHJuul/ld/proto"
 	"github.com/desertbit/grumble"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"google.golang.org/grpc"
-	"io"
-	"time"
 )
 
 func newClientAndCtx(ctx *grumble.Context, timeout time.Duration) (ldProto.LdClient, context.Context, func()) {
 	conn, err := grpc.Dial(ctx.Flags.String("target"), grpc.WithInsecure())
 	if err != nil {
-		_, _ = ctx.App.Println("failed to dial server" + ctx.Flags.String("target"))
+		ctx.App.PrintError(errText("failed to dial server" + ctx.Flags.String("target")))
 		return nil, nil, nil
 	}
 
@@ -39,9 +43,9 @@ func getProtoMsgAndDecode(msg []byte, protofile string, m func([]byte, *dynamic.
 	var dMsg *dynamic.Message
 out:
 	for _, pf := range fds {
-		for _, msgs := range pf.GetMessageTypes() {
+		for _, msgDesc := range pf.GetMessageTypes() {
 
-			dMsg = dynamic.NewMessage(msgs)
+			dMsg = dynamic.NewMessage(msgDesc)
 			if err = m(msg, dMsg); err == nil {
 				break out
 			}
@@ -87,7 +91,7 @@ func Get(ctx *grumble.Context) error {
 			return message.Unmarshal(bytes)
 		})
 		if err != nil {
-			ctx.App.Println("error creating dynamic message")
+			ctx.App.PrintError(errText("error creating dynamic message"))
 			return nil, val, err
 		}
 		if dMsg != nil {
@@ -110,7 +114,7 @@ func Set(ctx *grumble.Context) error {
 			return message.UnmarshalJSON(bytes)
 		})
 		if err != nil {
-			ctx.App.Println("error creating dynamic message")
+			ctx.App.PrintError(errText("error creating dynamic message"))
 			return nil, nil, err
 		}
 		if dMsg != nil {
@@ -140,7 +144,7 @@ func Delete(ctx *grumble.Context) error {
 			return message.Unmarshal(bytes)
 		})
 		if err != nil {
-			ctx.App.Println("error creating dynamic message")
+			ctx.App.PrintError(errText("error creating dynamic message"))
 			return nil, val, err
 		}
 		if dMsg != nil {
@@ -168,10 +172,10 @@ func GetRange(ctx *grumble.Context) error {
 		return err
 	} else {
 		count, err := handleRangeStream(ctx, stream)
+		ctx.App.Println("received messages:", count)
 		if err != nil {
 			return err
 		}
-		ctx.App.Println("received messages:", count)
 	}
 	return nil
 }
@@ -190,10 +194,10 @@ func DeleteRange(ctx *grumble.Context) error {
 		return err
 	} else {
 		count, err := handleRangeStream(ctx, stream)
+		ctx.App.Println("Deleted messages:", count)
 		if err != nil {
 			return err
 		}
-		ctx.App.Println("Deleted messages:", count)
 	}
 	return nil
 }
@@ -202,36 +206,72 @@ type rangeClient interface {
 	Recv() (*ldProto.KeyValue, error)
 }
 
+type errText string
+
+func (X errText) Error() string {
+	return string(X)
+}
+
 func handleRangeStream(ctx *grumble.Context, stream rangeClient) (int, error) {
 	var dMsg *dynamic.Message
 	protofile := ctx.Flags.String("protofile")
 	count := 0
+	msgChan := make(chan *ldProto.KeyValue)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	output := make(chan error, 1)
+
+	go func() {
+		for {
+			kv := <-msgChan
+			if dMsg == nil && protofile != "" {
+				var err error
+				dMsg, err = getProtoMsgAndDecode(kv.Value, protofile, func(b []byte, m *dynamic.Message) error {
+					return m.Unmarshal(b)
+				})
+				if err != nil {
+					ctx.App.PrintError(errText("error building dynamic message, cannot decode/serialize messages"))
+				}
+			}
+			if dMsg != nil {
+				dMsg.Reset()
+				if err := dMsg.Unmarshal(kv.Value); err != nil {
+					output <- err
+					break
+				}
+				jsBytes, err := dMsg.MarshalJSON()
+				if err != nil {
+					output <- err
+					break
+				}
+				kv.Value = jsBytes
+			}
+			_, _ = ctx.App.Println(kv)
+			count++
+		}
+	}()
+
+	var err error
 	for {
-		kv, err := stream.Recv()
+		var keyValue *ldProto.KeyValue
+		keyValue, err = stream.Recv()
 		if err == io.EOF {
+			err = nil
 			break
 		}
 		if err != nil {
-			return 0, err
+			break
 		}
-		if dMsg == nil && protofile != "" {
-			dMsg, err = getProtoMsgAndDecode(kv.Value, protofile, func(b []byte, m *dynamic.Message) error {
-				return m.Unmarshal(b)
-			})
+		select {
+		case <-interrupt:
+			ctx.App.PrintError(errText("Interrupted by the user"))
+			break
+		case err = <-output:
+			break
+		case msgChan <- keyValue:
 		}
-		if dMsg != nil {
-			dMsg.Reset()
-			if err := dMsg.Unmarshal(kv.Value); err != nil {
-				return 0, err
-			}
-			jsBytes, err := dMsg.MarshalJSON()
-			if err != nil {
-				return 0, err
-			}
-			kv.Value = jsBytes
-		}
-		_, _ = ctx.App.Println(kv)
-		count++
 	}
-	return count, nil
+	return count, err
 }
