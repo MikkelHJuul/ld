@@ -1,4 +1,5 @@
 # ld
+[![Go Report Card](https://goreportcard.com/badge/github.com/MikkelHJuul/ld)](https://goreportcard.com/report/github.com/MikkelHJuul/ld)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld?ref=badge_shield)
 
 Lean database - it's a simple-database, it's just an `rpc`-based server with the basic Get/Set/Delete operations.
