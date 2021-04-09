@@ -6,13 +6,15 @@ import (
 )
 
 var (
+	sharedFlags = func(f *grumble.Flags) {
+		f.String("t", "target", "localhost:5326", "the target ld server")
+		f.String("p", "protofile", "", "the protofile to serialize from, if unset plain bytes are sent, and the received values are not marshalled to JSON")
+	}
+
 	app = grumble.New(&grumble.Config{
 		Name:        "ld-client",
 		Description: "ld-client is an interactive client and executable to do non-\"client-side\" streaming requests",
-		Flags: func(f *grumble.Flags) {
-			f.String("t", "target", "localhost:5326", "the target ld server")
-			f.String("p", "protofile", "", "the protofile to serialize from, if unset plain bytes are posted")
-		},
+		Flags:       sharedFlags,
 	})
 
 	getCmd = &grumble.Command{
@@ -22,7 +24,7 @@ var (
 		Args: func(a *grumble.Args) {
 			a.String("key", "the key to fetch")
 		},
-		Usage: "get <key>",
+		Flags: sharedFlags,
 		Run:   impl.Get,
 	}
 
@@ -34,7 +36,7 @@ var (
 			a.String("key", "the key to fetch")
 			a.String("value", "the value to set, or to serialize if protofile is set")
 		},
-		Usage: "set <key> <value>",
+		Flags: sharedFlags,
 		Run:   impl.Set,
 	}
 
@@ -46,6 +48,7 @@ var (
 			f.String("", "from", "", "scan range from this key, inclusive")
 			f.String("", "to", "", "scan range to this key, inclusive")
 			f.String("", "pattern", "", "key pattern to query using")
+			sharedFlags(f)
 		},
 		Aliases: []string{"getran"},
 		Run:     impl.GetRange,
@@ -58,7 +61,8 @@ var (
 		Args: func(a *grumble.Args) {
 			a.String("key", "the key to fetch")
 		},
-		Run: impl.Delete,
+		Flags: sharedFlags,
+		Run:   impl.Delete,
 	}
 
 	deleteRangeCmd = &grumble.Command{
@@ -69,6 +73,7 @@ var (
 			f.String("", "from", "", "scan range from this key, inclusive")
 			f.String("", "to", "", "scan range to this key, inclusive")
 			f.String("", "pattern", "", "key pattern to query using")
+			sharedFlags(f)
 		},
 		Aliases: []string{"delran"},
 		Run:     impl.DeleteRange,

@@ -1,2 +1,6 @@
+ARG LD_VERSION
+
+FROM mjuul/ld:$LD_VERSION as ld-hub
+
 FROM ld-client
-COPY --from=ld /ld /ld
+COPY --from=ld-hub /ld /ld
