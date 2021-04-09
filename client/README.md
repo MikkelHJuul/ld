@@ -45,3 +45,4 @@ this interactive client would be able to serialise json to your `proto.Message` 
 ### TODO
 - tests
 - better protofile handling
+- "many"-endpoints (std-in-streaming '-'? via multiple input, via file?)
