@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#./docker_build.bash $(cat ./VERSION) $(./client/VERSION)
+#./docker_build.bash $(cat VERSION) $(cat client/VERSION)
 
 tag="${1:?no version tag given}"
 client_tag="${2:?no version tag given for client}"
@@ -45,7 +45,7 @@ if (( ! ldClientIsThere )); then
   docker build --build-arg LD_VERSION="$tag" -t ldwclient -f dockerfiles/Dockerfile_ldwclient .
 
   if tagAndPush ldwclient mjuul/ld:"$tag"-client; then
-    echo "pushed ld to docker-hub"
+    echo "pushed ld: to docker-hub"
   fi
 fi
 
