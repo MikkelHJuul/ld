@@ -174,9 +174,9 @@ func GetRange(ctx *grumble.Context) error {
 		To:      ctx.Flags.String("to"),
 	}
 
-	var count int
 	stream, err := client.DeleteRange(execCtx, keyRange); 
 	if err == nil {
+		var count int
 		count, err = handleRangeStream(ctx, stream)
 		ctx.App.Println("received messages:", count)
 	}
@@ -194,9 +194,9 @@ func DeleteRange(ctx *grumble.Context) error {
 		To:      ctx.Flags.String("to"),
 	}
 
-	var count int
 	stream, err := client.DeleteRange(execCtx, keyRange); 
 	if err == nil {
+		var count int
 		count, err = handleRangeStream(ctx, stream)
 		ctx.App.Println("Deleted messages:", count)
 	}
