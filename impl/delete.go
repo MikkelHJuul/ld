@@ -58,7 +58,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			}
 			if err != nil {
 				log.Info("error reading before delete", err)
-				continue
+				break
 			}
 			err = l.deleteTransaction(txn, k)
 			if err != nil {
@@ -121,7 +121,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			if err != nil {
 				out <- nil
 				log.Info("error when deleting record", err)
-				continue
+				break
 			}
 			out <- &pb.KeyValue{Key: key.Key, Value: value}
 		}
