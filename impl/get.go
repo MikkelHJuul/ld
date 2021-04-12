@@ -57,7 +57,7 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) error {
 	matcher, err := NewMatcher(keyRange.Pattern)
 	if err != nil {
-		log.Debugf("Could not compile matcher from patter, %v: %v", keyRange.Pattern, err)
+		log.Debugf("Could not compile matcher from pattern, %v: %v", keyRange.Pattern, err)
 		return err
 	}
 	chKeyMatches := make(chan *pb.Key)
