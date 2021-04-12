@@ -54,17 +54,10 @@ func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
 	go func() {
 		txn := l.DB.NewTransaction(true)
 		for create := range in {
-			if err := txn.Set([]byte(create.Key), create.Value); err == badger.ErrTxnTooBig {
-				err = txn.Commit()
-				if err != nil {
-					log.Warn("error when committing transaction in goroutine", err) //probably not?
-				}
-				txn = l.DB.NewTransaction(true)
-				err = txn.Set([]byte(create.Key), create.Value)
-				if err != nil {
-					log.Warn("error when setting after fallback", err)
-				}
-			} else if err != nil {
+			err := l.handleKeyTransaction(txn, &pb.Key{Key: create.Key}, true, func(txn *badger.Txn, key *pb.Key) error {
+				return txn.Set([]byte(create.Key), create.Value)
+			})
+			if err != nil {
 				out <- create
 			} else {
 				out <- &pb.KeyValue{}

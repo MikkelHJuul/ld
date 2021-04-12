@@ -29,16 +29,33 @@ func NewServer(dbLocation string, inmem bool) *ldService {
 
 func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.WaitGroup, key *pb.Key) {
 	defer wg.Done()
-	err := sendKeyValue(out, txn, key)
+	err := l.handleKeyTransaction(txn, key, false, func(txn *badger.Txn, key *pb.Key) error {
+		return sendKeyValue(out, txn, key)
+	})
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func (l ldService) deleteTransaction(txn *badger.Txn, key *pb.Key) error {
+	return l.handleKeyTransaction(txn, key, true, func(txn *badger.Txn, key *pb.Key) error {
+		return txn.Delete([]byte(key.Key))
+	})
+}
+
+func (l ldService) handleKeyTransaction(txn *badger.Txn, key *pb.Key, update bool, meth func(txn *badger.Txn, key *pb.Key) error) error {
+	err := meth(txn, key)
 	if err == badger.ErrTxnTooBig {
 		err = txn.Commit()
 		if err != nil {
 			log.Warn(err) //uncommitted read-transaction... hope it is fine
 		}
-		if err = sendKeyValue(out, txn, key); err != nil {
+		txn = l.DB.NewTransaction(update)
+		if err = meth(txn, key); err != nil {
 			log.Error("could not finish transaction after failure")
 		}
 	}
+	return err
 }
 
 func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {

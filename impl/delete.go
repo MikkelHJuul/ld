@@ -60,15 +60,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 				log.Info("error reading before delete", err)
 				continue
 			}
-			if err = txn.Delete([]byte(k.Key)); err == badger.ErrTxnTooBig {
-				err = txn.Commit()
-				if err != nil {
-					log.Warn(err)
-				}
-				if err = txn.Delete([]byte(k.Key)); err != nil {
-					log.Warn(err)
-				}
-			}
+			err = l.deleteTransaction(txn, k)
 			if err != nil {
 				log.Info("could not delete record", err)
 			}
@@ -125,7 +117,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 			if err != nil {
 				return
 			}
-			err = txn.Delete([]byte(key.Key))
+			err = l.deleteTransaction(txn, key)
 			if err != nil {
 				out <- nil
 				log.Info("error when deleting record", err)
