@@ -115,3 +115,28 @@ func validateReturn(t *testing.T, expected, got []*proto.KeyValue) {
 		t.Errorf("incorrect numbers of empty messages as expected")
 	}
 }
+
+type anyError string
+
+func (a anyError) Error() string {
+	return string(a)
+}
+
+type erroringKeyServer struct {
+	*testBidiKeyServer
+}
+type sendErroringKeyServer struct {
+	*testBidiKeyServer
+}
+
+func (e *erroringKeyServer) Recv() (*proto.Key, error) {
+	return nil, anyError("")
+}
+
+func (e *sendErroringKeyServer) Send(_ *proto.KeyValue) error {
+	return anyError("")
+}
+
+func (e *sendErroringKeyServer) Recv() (*proto.Key, error) {
+	return &proto.Key{Key: "anything"}, nil
+}

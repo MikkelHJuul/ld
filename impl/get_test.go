@@ -203,3 +203,27 @@ func Test_ldService_GetRange(t *testing.T) {
 		})
 	}
 }
+
+func TestGetRangeReturnsError(t *testing.T) {
+	l := newTestBadger(t)
+	err := l.GetRange(&proto.KeyRange{Pattern: "("}, newTestServer(nil))
+	if err == nil {
+		t.Error("err shouldn't have been nil")
+	}
+}
+
+func TestGetManyServerErrors(t *testing.T) {
+	l := newTestBadger(t)
+	err := l.GetMany(&erroringKeyServer{})
+	if err == nil {
+		t.Error("err shouldn't have been nil")
+	}
+}
+
+func TestGetManyServerSendErrors(t *testing.T) {
+	l := newTestBadger(t)
+	err := l.GetMany(&sendErroringKeyServer{})
+	if err == nil {
+		t.Error("err shouldn't have been nil")
+	}
+}
