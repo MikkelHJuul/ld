@@ -9,9 +9,6 @@ import (
 	_ "google.golang.org/grpc/encoding/gzip"
 	"net"
 	"os"
-
-	"net/http"
-	_ "net/http/pprof"
 )
 
 var (
@@ -29,15 +26,12 @@ func lookupEnvOrString(key string, defaultVal string) string {
 }
 
 func main() {
-	go func() {
-		_ = http.ListenAndServe(":6000", nil)
-	}()
+	flag.Parse()
 	loggingLevel, err := log.ParseLevel(*logLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.SetLevel(loggingLevel)
-	flag.Parse()
 	lis, err := net.Listen("tcp", "localhost:"+*port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
