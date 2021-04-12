@@ -1,5 +1,6 @@
 # ld
 [![Go Report Card](https://goreportcard.com/badge/github.com/MikkelHJuul/ld)](https://goreportcard.com/report/github.com/MikkelHJuul/ld)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/MikkelHJuul/ld)](https://pkg.go.dev/github.com/MikkelHJuul/ld)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld?ref=badge_shield)
 
 Lean database - it's a simple-database, it's just an `rpc`-based server with the basic Get/Set/Delete operations.
@@ -40,7 +41,7 @@ but can easily be changed to ingest other data, ingestion and read separated int
 ### CRUD - why not CRUD?
 CRUD operations must be implemented client side, use `Get -> [decision] -> Set` to implement create or update, the way you want to. fx 
 ```text
-    Create      Get/Delete -> if {empty response} -> Set
+    Create      Get -> if {empty response} -> Set
     Update      Get/Delete -> if {non-empty} -> [map?] -> Set
 ```
 To have done this server side would cause so much friction. All embeddable key-value databases, to my knowledge, implement Get-Set-Delete semantics, so whether you go with [bolt](https://github.com/boltdb/bolt)/[bbolt](https://github.com/etcd-io/bbolt) or badger you would always end up having this friction; so naturally you implement it without CRUD-semantics. Implementing a concurrent `GetMany`/`SetMany` ping-pong client-service feels a lot more elegant anyways.
