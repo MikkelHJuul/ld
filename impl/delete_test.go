@@ -60,8 +60,8 @@ func Test_ldService_DeleteMany(t *testing.T) {
 				t.Errorf("getmany did not return expected number of results, %v", tt.server.receive)
 			}
 			for _, aNil := range tt.server.receive {
-				if aNil != nil {
-					t.Error("GetMany did not return a nil")
+				if aNil.Value != nil && aNil.Key != "" {
+					t.Error("GetMany did not return an empty reponse")
 				}
 			}
 		})
