@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+
+package ld.proto;
+
+option go_package = "github.com/MikkelHJuul/ld/proto";
+option java_package = "com.github.mikkelhjuul.ld.proto";
+
+
+import "google/protobuf/any.proto";
+
+//the service `ld` is a database. As you can see it does one thing. Get-Set-Delete!
+// RPCs Suffixed, `Many`, are one-one bidirectional stream; order is not necessarily preserved
+service ld {
+  //empty response means success
+  //the database returns your KeyValue for errors
+  rpc Set(KeyValue) returns (KeyValue);
+  rpc SetMany(stream KeyValue) returns (stream KeyValue);
+
+  //empty responses means no such key.
+  rpc Get(Key) returns (KeyValue);
+  rpc GetMany(stream Key) returns (stream KeyValue);
+  rpc GetRange(KeyRange) returns (stream KeyValue);
+
+  //returns the deleted object, empty means no such key
+  rpc Delete(Key) returns (KeyValue);
+  rpc DeleteMany(stream Key) returns (stream KeyValue);
+
+  rpc DeleteRange(KeyRange) returns (stream KeyValue);
+
+}
+
+//The Key when querying directly for it
+//The Key in general could be any bytes, but pattern-scanning requires string,
+//so I have decided to increase the requirements in order to add the convenience
+//of pattern-searching.
+message Key {
+  string key = 1;
+}
+
+//A key-range is the only possibility of querying the data outside of a direct Key.
+//The logical operator between using prefix, pattern and from-to together is AND.
+//OR is not implemented as it can be done using more than one request
+//Empty KeyRange implies a full database stream
+message KeyRange {
+  //A key-prefix to search within.
+  //when using prefix along-side pattern and/or from-to they should both match.
+  // ie. a prefix "jo" could be used to speed up query speed of
+  //     pattern "john*" or from: "john1" to: "john6"
+  //the server will not try to guess a prefix from the pattern or from-to parameters
+  //pattern-searching is the slowest operation.
+  //pattern john* is the same as prefix: john, but slower
+  string prefix = 1;
+
+  // RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
+  string pattern = 2;
+
+  // both inclusive
+  // required for discrete systems with discrete queries
+  //  -- since you cannot reference a value outside of the last/first,
+  //     and would then not be able to query the last/first record.
+  //     and +1 semantics on strings don't really work
+  string from = 3;
+  string to = 4;
+}
+
+// A KeyValue with convenient google.WKT.Any added as value (the server remains agnostic to the content)
+// for most cases you probably want to use Any, if fx you know your data will require non-backwards
+// compatible changes to the client side .proto-file.
+// The con is that you convey the URL of your .proto-file for each datapoint.
+message KeyValue {
+  string key = 1;
+  google.protobuf.Any value = 2;
+}
