@@ -6,6 +6,7 @@ import (
 	"github.com/MikkelHJuul/ld/proto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/encoding/gzip"
 	"net"
 	"os"
 
