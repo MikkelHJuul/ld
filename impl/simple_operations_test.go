@@ -36,27 +36,28 @@ type aCase struct {
 func TestSetGetDeleteSingles(t *testing.T) {
 	lilly := &pb.KeyValue{Key: "hello", Value: []byte("Lilly")}
 	ellis := &pb.KeyValue{Key: "hi", Value: []byte("Ellis")}
+	empty := &pb.KeyValue{}
 	cases := []aCase{
 		{
 			name: "test set, get and delete correct outcome",
 			GetBefore: []kOp{
 				{
 					Key:  &pb.Key{Key: "hello"},
-					Resp: resp{KV: nil},
+					Resp: resp{KV: empty},
 				},
 				{
 					Key:  &pb.Key{Key: "hi"},
-					Resp: resp{KV: nil},
+					Resp: resp{KV: empty},
 				},
 			},
 			Set: []kvOp{
 				{
 					KV:   lilly,
-					Resp: resp{},
+					Resp: resp{KV: empty},
 				},
 				{
 					KV:   ellis,
-					Resp: resp{},
+					Resp: resp{KV: empty},
 				},
 			},
 			Get: []kOp{
@@ -84,17 +85,17 @@ func TestSetGetDeleteSingles(t *testing.T) {
 				},
 				{ //assert second time it's gone
 					Key:  &pb.Key{Key: "hi"},
-					Resp: resp{KV: nil},
+					Resp: resp{KV: empty},
 				},
 			},
 			GetAfter: []kOp{
 				{
 					Key:  &pb.Key{Key: "hello"},
-					Resp: resp{KV: nil},
+					Resp: resp{KV: empty},
 				},
 				{
 					Key:  &pb.Key{Key: "hi"},
-					Resp: resp{KV: nil},
+					Resp: resp{KV: empty},
 				},
 			},
 		},
@@ -103,7 +104,7 @@ func TestSetGetDeleteSingles(t *testing.T) {
 			Set: []kvOp{
 				{
 					KV:   &pb.KeyValue{Key: "empty"},
-					Resp: resp{},
+					Resp: resp{KV: empty},
 				},
 			},
 			Get: []kOp{

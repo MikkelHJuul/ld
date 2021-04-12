@@ -21,7 +21,7 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 		return txn.Delete([]byte(key.Key))
 	})
 	if err == badger.ErrKeyNotFound {
-		return nil, nil
+		return &pb.KeyValue{}, nil
 	}
 	if err != nil {
 		log.Errorf("error while deleting data in database: %v ", err)
@@ -53,7 +53,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 			var value []byte
 			value, err := readSingleFromKey(txn, k)
 			if err == badger.ErrKeyNotFound {
-				out <- nil
+				out <- &pb.KeyValue{}
 				continue
 			}
 			if err != nil {
@@ -119,7 +119,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		for key := range chKeyMatches {
 			value, err := readSingleFromKey(txn, key)
 			if err == badger.ErrKeyNotFound {
-				out <- nil
+				out <- &pb.KeyValue{}
 				err = nil
 			}
 			if err != nil {

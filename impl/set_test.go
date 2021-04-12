@@ -42,7 +42,7 @@ func Test_ldService_SetMany(t *testing.T) {
 				t.Errorf("mismatch in values received and sent")
 			}
 			for _, it := range tt.server.receive {
-				if it != nil {
+				if it.Key != "" && it.Value != nil {
 					t.Errorf("non-nil return")
 				}
 			}
