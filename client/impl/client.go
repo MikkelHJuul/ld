@@ -15,6 +15,18 @@ import (
 	"google.golang.org/grpc"
 )
 
+type deOrEncodeFunction func([]byte, *dynamic.Message) error
+type getDynamicMessageDecode func([]byte, deOrEncodeFunction) (*dynamic.Message, error)
+type executionMethod func(decode getDynamicMessageDecode) (*dynamic.Message, *ldProto.KeyValue, error)
+
+func unmarshalJSON(bytes []byte, message *dynamic.Message) error {
+	return message.UnmarshalJSON(bytes)
+}
+
+func unmarshal(bytes []byte, message *dynamic.Message) error {
+	return message.Unmarshal(bytes)
+}
+
 func newClientAndCtx(ctx *grumble.Context, timeout time.Duration) (ldProto.LdClient, context.Context, func()) {
 	conn, err := grpc.Dial(ctx.Flags.String("target"), grpc.WithInsecure())
 	if err != nil {
@@ -31,7 +43,7 @@ func newClientAndCtx(ctx *grumble.Context, timeout time.Duration) (ldProto.LdCli
 	return client, execCtx, cncl
 }
 
-func getProtoMsgAndDecode(msg []byte, protofile string, m func([]byte, *dynamic.Message) error) (*dynamic.Message, error) {
+func getProtoMsgAndDecode(msg []byte, protofile string, m deOrEncodeFunction) (*dynamic.Message, error) {
 	if protofile == "" {
 		return nil, nil
 	}
@@ -55,9 +67,9 @@ out:
 	return dMsg, err
 }
 
-func exec(ctx *grumble.Context, cmd func(func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error)) error {
+func exec(ctx *grumble.Context, cmd executionMethod) error {
 	protoFile := ctx.Flags.String("protofile")
-	dMsg, kv, err := cmd(func(b []byte, meth func([]byte, *dynamic.Message) error) (*dynamic.Message, error) {
+	dMsg, kv, err := cmd(func(b []byte, meth deOrEncodeFunction) (*dynamic.Message, error) {
 		return getProtoMsgAndDecode(b, protoFile, meth)
 	})
 	if err != nil || kv == nil {
@@ -78,22 +90,11 @@ func exec(ctx *grumble.Context, cmd func(func([]byte, func([]byte, *dynamic.Mess
 	return err
 }
 
-// Get implements `ld.proto` service rpc `Get`
-func Get(ctx *grumble.Context) error {
-	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
-	defer cancel()
-	return exec(ctx, func(dynFun func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error) {
-		key := ctx.Args.String("key")
-		val, err := client.Get(execCtx, &ldProto.Key{Key: key})
-		if err != nil || val.Key == "" {
-			return nil, nil, err
-		}
-		dMsg, err := dynFun(val.Value, func(bytes []byte, message *dynamic.Message) error {
-			return message.Unmarshal(bytes)
-		})
+func handleKeyValueReturned(val *ldProto.KeyValue) executionMethod {
+	return func(decode getDynamicMessageDecode) (*dynamic.Message, *ldProto.KeyValue, error) {
+		dMsg, err := decode(val.Value, unmarshal)
 		if err != nil {
-			ctx.App.PrintError(errText("error creating dynamic message"))
-			return nil, val, err
+			return nil, val, errText("error creating dynamic message")
 		}
 		if dMsg != nil {
 			msg, err := dMsg.MarshalJSON()
@@ -103,18 +104,27 @@ func Get(ctx *grumble.Context) error {
 			val.Value = msg
 		}
 		return nil, val, err
-	})
+	}
+}
+
+// Get implements `ld.proto` service rpc `Get`
+func Get(ctx *grumble.Context) error {
+	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
+	defer cancel()
+	val, err := client.Get(execCtx, &ldProto.Key{Key: ctx.Args.String("key")})
+	if err != nil || val.Key == "" {
+		return err
+	}
+	return exec(ctx, handleKeyValueReturned(val))
 }
 
 // Set implements `ld.proto` service rpc `Set`
 func Set(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
 	defer cancel()
-	return exec(ctx, func(dynFun func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error) {
+	return exec(ctx, func(decode getDynamicMessageDecode) (*dynamic.Message, *ldProto.KeyValue, error) {
 		msg := []byte(ctx.Args.String("value"))
-		dMsg, err := dynFun(msg, func(bytes []byte, message *dynamic.Message) error {
-			return message.UnmarshalJSON(bytes)
-		})
+		dMsg, err := decode(msg, unmarshalJSON)
 		if err != nil {
 			ctx.App.PrintError(errText("error creating dynamic message"))
 			return nil, nil, err
@@ -138,27 +148,11 @@ func Set(ctx *grumble.Context) error {
 func Delete(ctx *grumble.Context) error {
 	client, execCtx, cancel := newClientAndCtx(ctx, 5*time.Second)
 	defer cancel()
-	return exec(ctx, func(dynFun func([]byte, func([]byte, *dynamic.Message) error) (*dynamic.Message, error)) (*dynamic.Message, *ldProto.KeyValue, error) {
-		val, err := client.Delete(execCtx, &ldProto.Key{Key: ctx.Args.String("key")})
-		if err != nil || val.Key == "" {
-			return nil, nil, err
-		}
-		dMsg, err := dynFun(val.Value, func(bytes []byte, message *dynamic.Message) error {
-			return message.Unmarshal(bytes)
-		})
-		if err != nil {
-			ctx.App.PrintError(errText("error creating dynamic message"))
-			return nil, val, err
-		}
-		if dMsg != nil {
-			msg, err := dMsg.MarshalJSON()
-			if err != nil {
-				return nil, nil, err
-			}
-			val.Value = msg
-		}
-		return nil, val, err
-	})
+	val, err := client.Delete(execCtx, &ldProto.Key{Key: ctx.Args.String("key")})
+	if err != nil || val.Key == "" {
+		return err
+	}
+	return exec(ctx, handleKeyValueReturned(val))
 }
 
 // GetRange implements `ld.proto` streaming service rpc `GetRange`
