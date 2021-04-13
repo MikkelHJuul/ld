@@ -36,15 +36,7 @@ func (l ldService) DeleteMany(server pb.Ld_DeleteManyServer) error {
 	keys := make(chan *pb.Key)
 	ctx, ccl := context.WithCancel(context.Background())
 
-	//go routine that just sends!
-	go func() {
-		for kv := range out {
-			if err := server.Send(kv); err != nil {
-				log.Warn(err)
-			}
-		}
-		ccl()
-	}()
+	go sendCancel(server, out, ccl)
 
 	go func() {
 		txn := l.DB.NewTransaction(true)
@@ -96,14 +88,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 	out := make(chan *pb.KeyValue)
 	ctx, ccl := context.WithCancel(context.Background())
 
-	go func() {
-		for kv := range out {
-			if err := server.Send(kv); err != nil {
-				log.Info(err)
-			}
-		}
-		ccl()
-	}()
+	go sendCancel(server, out, ccl)
 
 	go func() {
 		txn := l.DB.NewTransaction(true)

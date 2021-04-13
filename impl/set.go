@@ -26,14 +26,7 @@ func (l ldService) SetMany(server pb.Ld_SetManyServer) error {
 	in := make(chan *pb.KeyValue)
 	ctx, ccl := context.WithCancel(context.Background())
 	out := l.setManyGenerator(in)
-	go func() {
-		for kv := range out {
-			if err := server.Send(kv); err != nil {
-				log.Warn(err)
-			}
-		}
-		ccl()
-	}()
+	go sendCancel(server, out, ccl)
 	for {
 		create, err := server.Recv()
 		if err == io.EOF {

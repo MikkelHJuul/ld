@@ -126,6 +126,7 @@ type erroringKeyServer struct {
 	*testBidiKeyServer
 }
 type sendErroringKeyServer struct {
+	die bool
 	*testBidiKeyServer
 }
 
@@ -138,5 +139,9 @@ func (e *sendErroringKeyServer) Send(_ *proto.KeyValue) error {
 }
 
 func (e *sendErroringKeyServer) Recv() (*proto.Key, error) {
+	if e.die {
+		return nil, io.EOF
+	}
+	e.die = true
 	return &proto.Key{Key: "anything"}, nil
 }

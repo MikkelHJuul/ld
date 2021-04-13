@@ -26,14 +26,9 @@ func (l ldService) GetMany(server pb.Ld_GetManyServer) error {
 	defer txn.Commit()
 	out := make(chan *pb.KeyValue)
 	ctx, ccl := context.WithCancel(context.Background())
-	go func() {
-		for kv := range out {
-			if err := server.Send(kv); err != nil {
-				log.Warn(err)
-			}
-		}
-		ccl()
-	}()
+
+	go sendCancel(server, out, ccl)
+
 	wg := &sync.WaitGroup{}
 	for {
 		key, err := server.Recv()
@@ -64,14 +59,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	out := make(chan *pb.KeyValue)
 	ctx, ccl := context.WithCancel(context.Background())
 
-	go func() {
-		for kv := range out {
-			if err := server.Send(kv); err != nil {
-				log.Warn(err)
-			}
-		}
-		ccl()
-	}()
+	go sendCancel(server, out, ccl)
 
 	go func() {
 		wg := &sync.WaitGroup{}
@@ -105,4 +93,18 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 	close(chKeyMatches)
 	<-ctx.Done()
 	return nil
+}
+
+type KvSender interface {
+	Send(*pb.KeyValue) error
+}
+
+func sendCancel(sender KvSender, out chan *pb.KeyValue, cancel func()) {
+	for kv := range out {
+		if err := sender.Send(kv); err != nil {
+			log.Warn(err)
+			break
+		}
+	}
+	cancel()
 }
