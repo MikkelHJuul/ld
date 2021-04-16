@@ -34,10 +34,18 @@ This project exposes [badgerDB](https://github.com/dgraph-io/badger). You should
 Hashmap Get-Set-Delete semantics! With bidirectional streaming rpc's. No lists, because aggregation of data should be kept at a minimum. 
 The APIs for get and delete further implement unidirectional server-side streams for querying via `KeyRange`.
 
+I consider the gRPC api to be feature complete. While the underlying implementation may change to enable better database configuration and/or usage of this code as a library. Maturity may also bring changes to the server implementation.
+
 See [test](test) for a client implementations, the testing package builds on the data from [DMI - Free data initiative](https://confluence.govcloud.dk/display/FDAPI) (specifically the lightning data set), 
 but can easily be changed to ingest other data, ingestion and read separated into two different clients. 
 
-(Note, loading the 9 mil datapoints for [lightning](https://confluence.govcloud.dk/pages/viewpage.action?pageId=37355752) from a downloaded unzipped line-delimited json-file takes about 2.5 mins)
+### Working with the API
+The API is expandable. Because of how gRPC encoding works you can replace the `bytes` type `value` tag on the client side with whatever you want.
+This way you could use it to store dynamically typed objects using `Any`. Or you can save and query the database with a fixed or reflected type.
+
+The test folder holds two small programs that implements a fixed type: [my_message.proto](test/client-proto/my_message.proto).
+
+The client uses reflection to serialize/deserialize json to a message given a `.proto`-file.
 
 ### CRUD - why not CRUD?
 CRUD operations must be implemented client side, use `Get -> [decision] -> Set` to implement create or update, the way you want to. fx 
@@ -54,18 +62,10 @@ flag            ENV             default     description
 ------------------------------------------------------------------------------------
 -port            PORT            5326        "5326" spells out "lean" in T9 keyboards
 -db-location     DB_LOCATION     ld_badger   The folder location where badger stores its database-files
--in-mem          IN_MEM          false       save data in memory (or not)
+-in-mem          IN_MEM          false       save data in memory (or not) setting this to true ignores db-location.
 -log-level       LOG_LEVEL       INFO        the logging level of the server
 ```
-The container `mjuul/ld:<tag>-client` does not support flags, use environment variables.
-
-### Working with the API
-The API is expandable. Because of how gRPC encoding works you can replace the `bytes` type `value` tag on the client side with whatever you want.
-This way you could use it to store dynamically typed objects using `Any`. Or you can save and query the database with a fixed or reflected type.
-
-The test folder holds two small programs that implements a fixed type: [my_message.proto](test/client-proto/my_message.proto).
-
-The client uses reflection to serialize/deserialize json to a message given a `.proto`-file.
+The container `mjuul/ld:<tag>-client` does not support flags for `ld`, use environment variables. (Since it is `ld-client` that is the entrypoint)
 
 
 ### Comparison to [ProfaneDB](https://gitlab.com/ProfaneDB/ProfaneDB)
