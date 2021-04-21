@@ -128,8 +128,8 @@ func TestSetGetDeleteSingles(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ld := NewServer(func(bo *badger.Options) {
-				bo.WithDir(dir).WithValueDir(dir)
+			ld, _ := NewServer(func(bo *badger.Options) {
+				*bo = bo.WithDir(dir).WithValueDir(dir)
 			})
 			ctx := context.Background()
 			for _, op := range aCase.GetBefore {

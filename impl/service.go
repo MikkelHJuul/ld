@@ -15,16 +15,16 @@ type ldService struct {
 
 // NewServer opens and returns a badger.DB facade
 // that implements the proto interface proto.LdServer.
-func NewServer(dbInitOptions ...func(*badger.Options)) *ldService {
-	def := badger.DefaultOptions("")
+func NewServer(dbInitOptions ...func(*badger.Options)) (*ldService, error) {
+	o := badger.DefaultOptions("ld_badger")
 	for _, opt := range dbInitOptions {
-		opt(&def)
+		opt(&o)
 	}
-	db, err := badger.Open(def)
+	db, err := badger.Open(o)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return &ldService{db}
+	return &ldService{db}, nil
 }
 
 func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.WaitGroup, key *pb.Key) {

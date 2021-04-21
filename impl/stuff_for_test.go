@@ -78,7 +78,7 @@ func oneThroughHundred() []*proto.KeyValue {
 }
 
 func newTestBadger(t *testing.T) *ldService {
-	l := NewServer(func(bo *badger.Options) {
+	l, _ := NewServer(func(bo *badger.Options) {
 		*bo = badger.DefaultOptions("").WithInMemory(true)
 	})
 	err := l.SetMany(newTestServer(oneThroughHundred()))

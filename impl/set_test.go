@@ -35,8 +35,8 @@ func Test_ldService_SetMany(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := NewServer(func(bo *badger.Options) {
-				bo.WithInMemory(true)
+			l, _ := NewServer(func(bo *badger.Options) {
+				*bo = badger.DefaultOptions("").WithInMemory(true)
 			})
 			if err := l.SetMany(tt.server); err != nil {
 				t.Errorf("SetMany() error = %v", err)

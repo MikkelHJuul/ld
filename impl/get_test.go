@@ -219,11 +219,3 @@ func TestGetManyServerErrors(t *testing.T) {
 		t.Error("err shouldn't have been nil")
 	}
 }
-
-func TestGetManyServerSendErrors(t *testing.T) {
-	l := newTestBadger(t)
-	err := l.GetMany(&sendErroringKeyServer{})
-	if err == nil {
-		t.Error("err shouldn't have been nil")
-	}
-}

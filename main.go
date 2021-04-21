@@ -43,7 +43,7 @@ func main() {
 		log.Infof("ignoring db-location: %s, because instance is set to run in-memory", dbLocation)
 		*dbLocation = ""
 	}
-	server := impl.NewServer(
+	server, err := impl.NewServer(
 		func(bo *badger.Options) {
 			*bo = badger.DefaultOptions(*dbLocation).WithInMemory(*mem)
 		})
@@ -52,6 +52,9 @@ func main() {
 			log.Error("error when closing the database", err)
 		}
 	}()
+	if err != nil {
+		log.Fatal("An error occured when starting the database", err)
+	}
 	proto.RegisterLdServer(grpcServer, server)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("server exited with error: %v", err)
