@@ -2,6 +2,7 @@ package impl
 
 import (
 	"github.com/MikkelHJuul/ld/proto"
+	"github.com/dgraph-io/badger/v3"
 	"testing"
 )
 
@@ -34,7 +35,9 @@ func Test_ldService_SetMany(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l := NewServer("", true)
+			l := NewServer(func(bo *badger.Options) {
+				bo.WithInMemory(true)
+			})
 			if err := l.SetMany(tt.server); err != nil {
 				t.Errorf("SetMany() error = %v", err)
 			}

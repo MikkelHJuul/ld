@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"github.com/dgraph-io/badger/v3"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -127,7 +128,9 @@ func TestSetGetDeleteSingles(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ld := NewServer(dir, false)
+			ld := NewServer(func(bo *badger.Options) {
+				bo.WithDir(dir).WithValueDir(dir)
+			})
 			ctx := context.Background()
 			for _, op := range aCase.GetBefore {
 				checkReturn(t, "GetBefore",

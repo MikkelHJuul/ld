@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/MikkelHJuul/ld/proto"
+	"github.com/dgraph-io/badger/v3"
 	"google.golang.org/grpc"
 	"io"
 	"testing"
@@ -77,7 +78,9 @@ func oneThroughHundred() []*proto.KeyValue {
 }
 
 func newTestBadger(t *testing.T) *ldService {
-	l := NewServer("", true)
+	l := NewServer(func(bo *badger.Options) {
+		*bo = badger.DefaultOptions("").WithInMemory(true)
+	})
 	err := l.SetMany(newTestServer(oneThroughHundred()))
 	if err != nil {
 		t.Error("could not initiate test database")

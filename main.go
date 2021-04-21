@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/MikkelHJuul/ld/impl"
 	"github.com/MikkelHJuul/ld/proto"
+	"github.com/dgraph-io/badger/v3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -38,7 +39,14 @@ func main() {
 	}
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
-	server := impl.NewServer(*dbLocation, *mem)
+	if *mem {
+		log.Infof("ignoring db-location: %s, because instance is set to run in-memory", dbLocation)
+		*dbLocation = ""
+	}
+	server := impl.NewServer(
+		func(bo *badger.Options) {
+			*bo = badger.DefaultOptions(*dbLocation).WithInMemory(*mem)
+		})
 	defer func() {
 		if err := server.Close(); err != nil {
 			log.Error("error when closing the database", err)
