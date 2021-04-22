@@ -1,6 +1,3 @@
-ARG LD_VERSION
-
-FROM mjuul/ld:$LD_VERSION as ld-hub
-
-FROM ld-client
-COPY --from=ld-hub /ld /ld
+FROM ld
+COPY --from=mjuul/ld-client /ld-client /ld-client
+ENTRYPOINT ["/ld-client"]
