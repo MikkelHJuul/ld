@@ -4,3 +4,4 @@ test/build
 .idea
 data
 ld_badger
+coverage.txt
