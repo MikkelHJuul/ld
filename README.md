@@ -1,6 +1,8 @@
 # ld
 [![Go Report Card](https://goreportcard.com/badge/github.com/MikkelHJuul/ld)](https://goreportcard.com/report/github.com/MikkelHJuul/ld)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/MikkelHJuul/ld)](https://pkg.go.dev/github.com/MikkelHJuul/ld)
+[![Maintainability](https://api.codeclimate.com/v1/badges/bd9ba9fa7fdf36eb5164/maintainability)](https://codeclimate.com/github/MikkelHJuul/ld/maintainability)
+[![codecov](https://codecov.io/gh/MikkelHJuul/ld/branch/master/graph/badge.svg?token=SRXDOXVAOP)](https://codecov.io/gh/MikkelHJuul/ld)
 ![GitHub License](https://img.shields.io/github/license/MikkelHJuul/ld)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMikkelHJuul%2Fld?ref=badge_shield)
 
