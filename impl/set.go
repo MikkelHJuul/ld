@@ -12,7 +12,7 @@ import (
 // Set implements method Set from proto.LdServer. returns nothing for succes, the value and error for any error.
 func (l ldService) Set(_ context.Context, value *pb.KeyValue) (*pb.KeyValue, error) {
 	err := l.DB.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(value.Key), value.Value)
+		return txn.Set(value.Key, value.Value)
 	})
 	if err != nil {
 		log.Errorf("error while saving data to database: %v ", err)
@@ -48,7 +48,7 @@ func (l ldService) setManyGenerator(in chan *pb.KeyValue) chan *pb.KeyValue {
 		txn := l.DB.NewTransaction(true)
 		for create := range in {
 			err := l.handleKeyTransaction(txn, &pb.Key{Key: create.Key}, true, func(txn *badger.Txn, key *pb.Key) error {
-				return txn.Set([]byte(create.Key), create.Value)
+				return txn.Set(create.Key, create.Value)
 			})
 			if err != nil {
 				out <- create

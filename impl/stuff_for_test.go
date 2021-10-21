@@ -72,7 +72,7 @@ func oneThroughHundred() []*proto.KeyValue {
 	lst := make([]*proto.KeyValue, 100)
 	for i := 0; i < 100; i++ {
 		k := fmt.Sprintf("%02d", i)
-		lst[i] = &proto.KeyValue{Key: k, Value: []byte(k)}
+		lst[i] = &proto.KeyValue{Key: []byte(k), Value: []byte(k)}
 	}
 	return lst
 }
@@ -100,7 +100,7 @@ func validateReturn(t *testing.T, expected, got []*proto.KeyValue) {
 		}
 		isThere := false
 		for _, res := range expected {
-			if aVal.Key == res.Key && bytes.Equal(aVal.Value, res.Value) {
+			if string(aVal.Key) == string(res.Key) && bytes.Equal(aVal.Value, res.Value) {
 				isThere = true
 				break
 			}
@@ -146,5 +146,5 @@ func (e *sendErroringKeyServer) Recv() (*proto.Key, error) {
 		return nil, io.EOF
 	}
 	e.die = true
-	return &proto.Key{Key: "anything"}, nil
+	return &proto.Key{Key: []byte("anything")}, nil
 }

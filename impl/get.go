@@ -82,7 +82,7 @@ func (l ldService) GetRange(keyRange *pb.KeyRange, server pb.Ld_GetRangeServer) 
 		for iter.Rewind(); iter.Valid(); iter.Next() {
 			k := iter.Item().Key()
 			if matcher.Match(k) {
-				chKeyMatches <- &pb.Key{Key: string(k)}
+				chKeyMatches <- &pb.Key{Key: k}
 			}
 		}
 		return nil

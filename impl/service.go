@@ -1,7 +1,7 @@
 package impl
 
 import (
-	"github.com/MikkelHJuul/bIter"
+	bIter "github.com/MikkelHJuul/bIter"
 	pb "github.com/MikkelHJuul/ld/proto"
 	"github.com/dgraph-io/badger/v3"
 	log "github.com/sirupsen/logrus"
@@ -39,7 +39,7 @@ func (l ldService) sendKeyWith(out chan *pb.KeyValue, txn *badger.Txn, wg *sync.
 
 func (l ldService) deleteTransaction(txn *badger.Txn, key *pb.Key) error {
 	return l.handleKeyTransaction(txn, key, true, func(txn *badger.Txn, key *pb.Key) error {
-		return txn.Delete([]byte(key.Key))
+		return txn.Delete(key.Key)
 	})
 }
 
@@ -66,7 +66,7 @@ func sendKeyValue(out chan *pb.KeyValue, txn *badger.Txn, key *pb.Key) error {
 	return err
 }
 
-func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
+func decideOutcome(err error, key []byte, value []byte) (*pb.KeyValue, error) {
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			return &pb.KeyValue{}, nil
@@ -78,11 +78,11 @@ func decideOutcome(err error, key string, value []byte) (*pb.KeyValue, error) {
 }
 
 func keyRangeIterator(it *badger.Iterator, keyRange *pb.KeyRange) bIter.Iterator {
-	return bIter.KeyRangeIterator(it, []byte(keyRange.Prefix), []byte(keyRange.From), []byte(keyRange.To))
+	return bIter.KeyRangeIterator(it, keyRange.Prefix, keyRange.From, keyRange.To)
 }
 
 func readSingleFromKey(txn *badger.Txn, key *pb.Key) (value []byte, err error) {
-	return readSingle(txn, []byte(key.Key))
+	return readSingle(txn, key.Key)
 }
 
 func readSingle(txn *badger.Txn, key []byte) (value []byte, err error) {

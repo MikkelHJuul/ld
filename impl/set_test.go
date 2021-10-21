@@ -14,22 +14,22 @@ func Test_ldService_SetMany(t *testing.T) {
 		{
 			name: "a simple server",
 			server: newTestServer([]*proto.KeyValue{
-				{Key: "1", Value: []byte("1")},
-				{Key: "2", Value: []byte("2")},
-				{Key: "3", Value: []byte("3")},
-				{Key: "4", Value: []byte("4")},
-				{Key: "5", Value: []byte("5")},
+				{Key: []byte("1"), Value: []byte("1")},
+				{Key: []byte("2"), Value: []byte("2")},
+				{Key: []byte("3"), Value: []byte("3")},
+				{Key: []byte("4"), Value: []byte("4")},
+				{Key: []byte("5"), Value: []byte("5")},
 			}),
 		},
 		{
 			name: "a simple server re-set key",
 			server: newTestServer([]*proto.KeyValue{
-				{Key: "1", Value: []byte("1")},
-				{Key: "1", Value: []byte("1")},
-				{Key: "1", Value: []byte("4")},
-				{Key: "1", Value: []byte("2")},
-				{Key: "1", Value: []byte("1")},
-				{Key: "1", Value: []byte("1")},
+				{Key: []byte("1"), Value: []byte("1")},
+				{Key: []byte("1"), Value: []byte("1")},
+				{Key: []byte("1"), Value: []byte("4")},
+				{Key: []byte("1"), Value: []byte("2")},
+				{Key: []byte("1"), Value: []byte("1")},
+				{Key: []byte("1"), Value: []byte("1")},
 			}),
 		},
 	}
@@ -45,7 +45,7 @@ func Test_ldService_SetMany(t *testing.T) {
 				t.Errorf("mismatch in values received and sent")
 			}
 			for _, it := range tt.server.receive {
-				if it.Key != "" && it.Value != nil {
+				if len(it.Key) > 0 && it.Value != nil {
 					t.Errorf("non-nil return")
 				}
 			}

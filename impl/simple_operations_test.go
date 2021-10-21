@@ -35,19 +35,19 @@ type aCase struct {
 }
 
 func TestSetGetDeleteSingles(t *testing.T) {
-	lilly := &pb.KeyValue{Key: "hello", Value: []byte("Lilly")}
-	ellis := &pb.KeyValue{Key: "hi", Value: []byte("Ellis")}
+	lilly := &pb.KeyValue{Key: []byte("hello"), Value: []byte("Lilly")}
+	ellis := &pb.KeyValue{Key: []byte("hi"), Value: []byte("Ellis")}
 	empty := &pb.KeyValue{}
 	cases := []aCase{
 		{
 			name: "test set, get and delete correct outcome",
 			GetBefore: []kOp{
 				{
-					Key:  &pb.Key{Key: "hello"},
+					Key:  &pb.Key{Key: []byte("hello")},
 					Resp: resp{KV: empty},
 				},
 				{
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: empty},
 				},
 			},
@@ -63,39 +63,39 @@ func TestSetGetDeleteSingles(t *testing.T) {
 			},
 			Get: []kOp{
 				{
-					Key:  &pb.Key{Key: "hello"},
+					Key:  &pb.Key{Key: []byte("hello")},
 					Resp: resp{KV: lilly},
 				},
 				{
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: ellis},
 				},
 				{ //assert twice
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: ellis},
 				},
 			},
 			Del: []kOp{
 				{
-					Key:  &pb.Key{Key: "hello"},
+					Key:  &pb.Key{Key: []byte("hello")},
 					Resp: resp{KV: lilly},
 				},
 				{
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: ellis},
 				},
 				{ //assert second time it's gone
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: empty},
 				},
 			},
 			GetAfter: []kOp{
 				{
-					Key:  &pb.Key{Key: "hello"},
+					Key:  &pb.Key{Key: []byte("hello")},
 					Resp: resp{KV: empty},
 				},
 				{
-					Key:  &pb.Key{Key: "hi"},
+					Key:  &pb.Key{Key: []byte("hi")},
 					Resp: resp{KV: empty},
 				},
 			},
@@ -104,20 +104,20 @@ func TestSetGetDeleteSingles(t *testing.T) {
 			name: "ingest empty-value object",
 			Set: []kvOp{
 				{
-					KV:   &pb.KeyValue{Key: "empty"},
+					KV:   &pb.KeyValue{Key: []byte("empty")},
 					Resp: resp{KV: empty},
 				},
 			},
 			Get: []kOp{
 				{
-					Key:  &pb.Key{Key: "empty"},
-					Resp: resp{KV: &pb.KeyValue{Key: "empty"}},
+					Key:  &pb.Key{Key: []byte("empty")},
+					Resp: resp{KV: &pb.KeyValue{Key: []byte("empty")}},
 				},
 			},
 			Del: []kOp{
 				{
-					Key:  &pb.Key{Key: "empty"},
-					Resp: resp{KV: &pb.KeyValue{Key: "empty"}},
+					Key:  &pb.Key{Key: []byte("empty")},
+					Resp: resp{KV: &pb.KeyValue{Key: []byte("empty")}},
 				},
 			},
 		},

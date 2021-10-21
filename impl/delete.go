@@ -18,7 +18,7 @@ func (l ldService) Delete(_ context.Context, key *pb.Key) (*pb.KeyValue, error) 
 		if err != nil {
 			return
 		}
-		return txn.Delete([]byte(key.Key))
+		return txn.Delete(key.Key)
 	})
 	if err == badger.ErrKeyNotFound {
 		return &pb.KeyValue{}, nil
@@ -122,7 +122,7 @@ func (l ldService) DeleteRange(keyRange *pb.KeyRange, server pb.Ld_DeleteRangeSe
 		for iter.Rewind(); iter.Valid(); iter.Next() {
 			k := iter.Item().Key()
 			if matcher.Match(k) {
-				chKeyMatches <- &pb.Key{Key: string(k)}
+				chKeyMatches <- &pb.Key{Key: k}
 			}
 		}
 		return nil

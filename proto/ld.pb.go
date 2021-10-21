@@ -25,12 +25,15 @@ const (
 )
 
 //The Key when querying directly for it
+//The Key in general could be any bytes, but pattern-scanning requires string,
+//so I have decided to increase the requirements in order to add the convenience
+//of pattern-searching.
 type Key struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"` // [(validate.rules).string { pattern: "(?i)^[0-9a-zA-Z_-.~]+$", max_len: 64 }];  // https://tools.ietf.org/html/rfc3986//section-2.3
+	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 }
 
 func (x *Key) Reset() {
@@ -65,11 +68,11 @@ func (*Key) Descriptor() ([]byte, []int) {
 	return file_ld_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Key) GetKey() string {
+func (x *Key) GetKey() []byte {
 	if x != nil {
 		return x.Key
 	}
-	return ""
+	return nil
 }
 
 //A key-range is the only possibility of querying the data outside of a direct Key.
@@ -86,15 +89,18 @@ type KeyRange struct {
 	// ie. a prefix "jo" could be used to speed up query speed of
 	//     pattern "john*" or from: "john1" to: "john6"
 	//the server will not try to guess a prefix from the pattern or from-to parameters
-	Prefix string `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
-	// RE2 style regex, see: https://github.com/google/re2/wiki/Syntax
+	//pattern-searching is the slowest operation.
+	//pattern john* is the same as prefix: john, but slower
+	Prefix []byte `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	// RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
 	Pattern string `protobuf:"bytes,2,opt,name=pattern,proto3" json:"pattern,omitempty"`
 	// both inclusive
 	// required for discrete systems with discrete queries
 	//  -- since you cannot reference a value outside of the last/first,
 	//     and would then not be able to query the last/first record.
-	From string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
-	To   string `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
+	//     and +1 semantics on strings don't really work
+	From []byte `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
+	To   []byte `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
 }
 
 func (x *KeyRange) Reset() {
@@ -129,11 +135,11 @@ func (*KeyRange) Descriptor() ([]byte, []int) {
 	return file_ld_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *KeyRange) GetPrefix() string {
+func (x *KeyRange) GetPrefix() []byte {
 	if x != nil {
 		return x.Prefix
 	}
-	return ""
+	return nil
 }
 
 func (x *KeyRange) GetPattern() string {
@@ -143,18 +149,18 @@ func (x *KeyRange) GetPattern() string {
 	return ""
 }
 
-func (x *KeyRange) GetFrom() string {
+func (x *KeyRange) GetFrom() []byte {
 	if x != nil {
 		return x.From
 	}
-	return ""
+	return nil
 }
 
-func (x *KeyRange) GetTo() string {
+func (x *KeyRange) GetTo() []byte {
 	if x != nil {
 		return x.To
 	}
-	return ""
+	return nil
 }
 
 type KeyValue struct {
@@ -162,7 +168,7 @@ type KeyValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	//You can easily replace this with google's Any if your want to
 	//Or replace with your own message-type
 	//
@@ -209,11 +215,11 @@ func (*KeyValue) Descriptor() ([]byte, []int) {
 	return file_ld_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *KeyValue) GetKey() string {
+func (x *KeyValue) GetKey() []byte {
 	if x != nil {
 		return x.Key
 	}
-	return ""
+	return nil
 }
 
 func (x *KeyValue) GetValue() []byte {
@@ -228,15 +234,15 @@ var File_ld_proto protoreflect.FileDescriptor
 var file_ld_proto_rawDesc = []byte{
 	0x0a, 0x08, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x08, 0x6c, 0x64, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x17, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b,
-	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x22, 0x60, 0x0a,
+	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x22, 0x60, 0x0a,
 	0x08, 0x4b, 0x65, 0x79, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x70, 0x72, 0x65,
-	0x66, 0x69, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x72, 0x65, 0x66, 0x69,
+	0x66, 0x69, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x70, 0x72, 0x65, 0x66, 0x69,
 	0x78, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x02, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x66,
-	0x72, 0x6f, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12,
-	0x0e, 0x0a, 0x02, 0x74, 0x6f, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x74, 0x6f, 0x22,
+	0x72, 0x6f, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12,
+	0x0e, 0x0a, 0x02, 0x74, 0x6f, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x74, 0x6f, 0x22,
 	0x32, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6b,
-	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
+	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
 	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x76, 0x61,
 	0x6c, 0x75, 0x65, 0x32, 0x97, 0x03, 0x0a, 0x02, 0x6c, 0x64, 0x12, 0x2d, 0x0a, 0x03, 0x53, 0x65,
 	0x74, 0x12, 0x12, 0x2e, 0x6c, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4b, 0x65, 0x79,
@@ -389,12 +395,14 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LdClient interface {
 	//empty response means success
-	//the database returns your KeyValue for errors, order is not necessarily preserved
+	//the database returns your KeyValue for errors
 	Set(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*KeyValue, error)
 	SetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_SetManyClient, error)
+	//empty responses means no such key.
 	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	GetMany(ctx context.Context, opts ...grpc.CallOption) (Ld_GetManyClient, error)
 	GetRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_GetRangeClient, error)
+	//returns the deleted object, empty means no such key
 	Delete(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
 	DeleteMany(ctx context.Context, opts ...grpc.CallOption) (Ld_DeleteManyClient, error)
 	DeleteRange(ctx context.Context, in *KeyRange, opts ...grpc.CallOption) (Ld_DeleteRangeClient, error)
@@ -595,12 +603,14 @@ func (x *ldDeleteRangeClient) Recv() (*KeyValue, error) {
 // LdServer is the server API for Ld service.
 type LdServer interface {
 	//empty response means success
-	//the database returns your KeyValue for errors, order is not necessarily preserved
+	//the database returns your KeyValue for errors
 	Set(context.Context, *KeyValue) (*KeyValue, error)
 	SetMany(Ld_SetManyServer) error
+	//empty responses means no such key.
 	Get(context.Context, *Key) (*KeyValue, error)
 	GetMany(Ld_GetManyServer) error
 	GetRange(*KeyRange, Ld_GetRangeServer) error
+	//returns the deleted object, empty means no such key
 	Delete(context.Context, *Key) (*KeyValue, error)
 	DeleteMany(Ld_DeleteManyServer) error
 	DeleteRange(*KeyRange, Ld_DeleteRangeServer) error

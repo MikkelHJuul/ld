@@ -32,7 +32,7 @@ service ld {
 //so I have decided to increase the requirements in order to add the convenience
 //of pattern-searching.
 message Key {
-    string key = 1;
+    bytes key = 1;
 }
 
 //A key-range is the only possibility of querying the data outside of a direct Key.
@@ -47,7 +47,7 @@ message KeyRange {
     //the server will not try to guess a prefix from the pattern or from-to parameters
     //pattern-searching is the slowest operation.
     //pattern john* is the same as prefix: john, but slower
-    string prefix = 1;
+    bytes prefix = 1;
 
     // RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
     string pattern = 2;
@@ -57,12 +57,12 @@ message KeyRange {
     //  -- since you cannot reference a value outside of the last/first,
     //     and would then not be able to query the last/first record.
     //     and +1 semantics on strings don't really work
-    string from = 3;
-    string to = 4;
+    bytes from = 3;
+    bytes to = 4;
 }
 
 message KeyValue {
-    string key = 1;
+    bytes key = 1;
     //You can easily replace this with google's Any if your want to
     //Or replace with your own message-type
     //
