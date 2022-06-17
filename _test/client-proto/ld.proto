@@ -1,13 +1,13 @@
 syntax = "proto3";
 
 
-package com.github.some.project;
+package cat.lol;
 
 option go_package = "github.com/MikkelHJuul/some/project";
 
 //the service `ld` is a database. As you can see it does one thing. Get-Set-Delete!
 // RPCs Suffixed, `Many`, are one-one bidirectional stream; order is not necessarily preserved
-service MyData {
+service Sniffs {
     //empty response means success
     //the database returns your KeyValue for errors
     rpc Set(KeyValue) returns (KeyValue);

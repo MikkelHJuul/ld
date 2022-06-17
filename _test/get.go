@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/MikkelHJuul/ld/test/client-proto"
+	"github.com/MikkelHJuul/ld/_test/client-proto/project"
 	"google.golang.org/grpc"
 )
 
@@ -21,14 +21,14 @@ func main() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 	defer conn.Close()
-	client := ld_proto.NewLdClient(conn)
+	client := project.NewSniffsClient(conn)
 	ctx := context.TODO()
 	//defer cancel()
 
 	//timeString := ld_proto.HandmadeTimeKeyString("2018-07-04T19:01:12.324000Z")
 	//readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{}) //all values
 	//readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{Prefix: "00510"})  // on 2005, between day 100 and 109
-	readStream, err := client.GetRange(ctx, &ld_proto.KeyRange{Prefix: "005100", Pattern: "005100...u2"}) // the 100th day (april 10th) on u2 (geohash)
+	readStream, err := client.GetRange(ctx, &project.KeyRange{Prefix: "005100", Pattern: "005100...u2"}) // the 100th day (april 10th) on u2 (geohash)
 	if err != nil {
 		log.Fatal(err)
 	}

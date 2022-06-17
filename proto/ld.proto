@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-
 package ld.proto;
+
+import "google/api/annotations.proto";
 
 option go_package = "github.com/MikkelHJuul/ld/proto";
 option java_package = "com.github.mikkelhjuul.ld.proto";
@@ -11,16 +12,29 @@ option java_package = "com.github.mikkelhjuul.ld.proto";
 service ld {
     //empty response means success
     //the database returns your KeyValue for errors
-    rpc Set(KeyValue) returns (KeyValue);
+    rpc Set(KeyValue) returns (KeyValue) {
+		option (google.api.http) = {
+			post: "/ld/v1/ld.proto.ld/{key}"
+			body: "value"
+		};
+	}
     rpc SetMany(stream KeyValue) returns (stream KeyValue);
 
     //empty responses means no such key.
-    rpc Get(Key) returns (KeyValue);
+    rpc Get(Key) returns (KeyValue) {
+		option (google.api.http) = {
+			get: "/ld/v1/ld.proto.ld/{key}"
+		};
+	}
     rpc GetMany(stream Key) returns (stream KeyValue);
     rpc GetRange(KeyRange) returns (stream KeyValue);
 
     //returns the deleted object, empty means no such key
-    rpc Delete(Key) returns (KeyValue);
+    rpc Delete(Key) returns (KeyValue){
+		option (google.api.http) = {
+			delete: "/ld/v1/ld.proto.ld/{key}"
+		};
+	}
     rpc DeleteMany(stream Key) returns (stream KeyValue);
 
     rpc DeleteRange(KeyRange) returns (stream KeyValue);

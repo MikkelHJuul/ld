@@ -1,6 +1,8 @@
-module github.com/MikkelHJuul/ld/test
+module github.com/MikkelHJuul/ld/_test
 
 go 1.16
+
+replace github.com/MikkelHJuul/ld/_test/client-proto/project => ./_test/client-proto/project
 
 require (
 	github.com/mmcloughlin/geohash v0.10.0

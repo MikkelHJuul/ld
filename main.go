@@ -1,22 +1,20 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"github.com/MikkelHJuul/ld/impl"
-	"github.com/MikkelHJuul/ld/proto"
-	"github.com/dgraph-io/badger/v3"
+	"net"
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
-	"net"
-	"os"
 )
 
 var (
 	port       = flag.String("port", lookupEnvOrString("PORT", "5326"), "The server port, default 5326")
-	dbLocation = flag.String("db-location", lookupEnvOrString("DB_LOCATION", "ld_badger"), "folder location where the database is situated")
+	dbLocation = flag.String("db-location", lookupEnvOrString("DB_LOCATION", "ld_db"), "folder location where the database is situated")
 	logLevel   = flag.String("log-level", lookupEnvOrString("LOG_LEVEL", "INFO"), "configure logging level")
-	mem        = flag.Bool("in-mem", func() bool { _, ok := os.LookupEnv("IN_MEM"); return ok }(), "if the database is in-memory")
 )
 
 func lookupEnvOrString(key string, defaultVal string) string {
@@ -37,25 +35,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	if *mem {
-		log.Infof("ignoring db-location: %s, because instance is set to run in-memory", dbLocation)
-		*dbLocation = ""
-	}
-	server, err := impl.NewServer(
-		func(bo *badger.Options) {
-			*bo = badger.DefaultOptions(*dbLocation).WithInMemory(*mem)
-		})
-	defer func() {
-		if err := server.Close(); err != nil {
-			log.Error("error when closing the database", err)
-		}
-	}()
+	_, err = os.Stat(*dbLocation)
 	if err != nil {
-		log.Fatal("An error occured when starting the database", err)
+		if errors.Is(err, os.ErrNotExist) {
+			log.Fatalf(`could not open file, does not exist:`, *dbLocation)
+		} else {
+			log.Fatalf(`unexpected error with database location:`, *dbLocation)
+		}
 	}
-	proto.RegisterLdServer(grpcServer, server)
+	var opts []grpc.ServerOption
+	var l = ldServer{make(map[string]*service)}
+	opts = append(opts, grpc.UnknownServiceHandler(l.serveUnknownService()))
+	// create general server
+	// use grpc.UnkownServiceHandler to service requests (it's hacky! but it works)
+	// link this and admin server somehow (how tight should the bound be?)
+
+	grpcServer := grpc.NewServer(opts...) // unkown server is injected via options
+
+	// create and register admin server
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("server exited with error: %v", err)
 	}
