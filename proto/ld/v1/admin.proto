@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package ld.v1;
+
+
+service AdminService {
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+    rpc RegistryInfo (RegistryInfoRequest) returns (RegistryInfoResponse);
+    rpc Registry (RegistryRequest) returns (RegistryResponse);
+}
+
+message RegistryRequest {}
+
+message RegisterResponse {
+    RegisterError error = 1;
+}
+
+message RegisterError {
+    enum RegisterErrorCode {
+        UNSPECIFIED = 0;
+        INVALID_REGISTRY = 1;
+        INVALID_REQUEST = 2;
+    }
+    RegisterErrorCode code = 1;
+    string message = 2;
+}
+
+message RegistryInfoRequest {
+    string proto_name = 1;
+}
+
+message RegisterRequest {
+    enum Type {
+        UNSPECIFIED = 0;
+        ADD = 1;
+        ALTER = 2;
+        REMOVE = 3;
+    }
+    Type type = 1;
+    RegistryInfo entry = 2;
+}
+
+message RegistryInfoResponse {
+   RegistryInfo entry = 1;
+}
+
+message RegistryResponse {
+    repeated RegistryInfo registries = 1;
+}
+
+message RegistryInfo {
+    enum Method {
+        UNSPECIFIED = 0; // all 
+        GET = 1;
+        GET_MANY = 2;
+        GET_RANGE = 4;
+        SET = 8;
+        SET_MANY = 16; 
+        DELETE = 32;
+        DELETE_MANY = 64;
+        DELETE_RANGER = 128;
+    }
+
+    string proto_name = 1;
+    repeated Method methods = 5;
+    bytes proto_file = 10;
+}

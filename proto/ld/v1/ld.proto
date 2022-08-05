@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package ld.v1;
+
+//the service `Ld` is a database. As you can see it does one thing. Get-Set-Delete!
+// RPCs Suffixed, `Many`, are one-one bidirectional stream; order is not necessarily preserved
+service LdService {
+    //empty response means success
+    //the database returns your KeyValue for errors
+    rpc Set(SetRequest) returns (SetResponse);
+    rpc SetMany(stream SetManyRequest) returns (stream SetManyResponse);
+
+    //empty responses means no such key.
+    rpc Get(GetRequest) returns (GetResponse);
+    rpc GetMany(stream GetManyRequest) returns (stream GetManyResponse);
+    rpc GetRange(GetRangeRequest) returns (stream GetRangeResponse);
+
+    //returns the deleted object, empty means no such key
+    rpc Delete(DeleteRequest) returns (DeleteResponse);
+    rpc DeleteMany(stream DeleteManyRequest) returns (stream DeleteManyResponse);
+    rpc DeleteRange(DeleteRangeRequest) returns (stream DeleteRangeResponse);
+
+}
+
+message SetRequest {
+    KeyValue kv = 1;
+}
+
+message SetResponse {
+    KeyValue kv = 1;
+}
+
+message SetManyRequest {
+    KeyValue kv = 1;
+}
+
+message SetManyResponse {
+    KeyValue kv = 1;
+}
+
+message GetRequest {
+    Key k = 1;
+}
+
+message DeleteRequest {
+    Key k = 1;
+}
+
+message GetManyRequest {
+    Key k = 1;
+}
+
+message DeleteManyRequest {
+    Key k = 1;
+}
+
+message GetResponse {
+    KeyValue kv = 1;
+}
+
+message GetManyResponse {
+    KeyValue kv = 1;
+}
+
+message DeleteResponse {
+    KeyValue kv = 1;
+}
+
+message DeleteManyResponse {
+    KeyValue kv = 1;
+}
+
+message GetRangeRequest {
+    KeyRange range = 1;
+}
+
+message DeleteRangeRequest {
+    KeyRange range = 1;
+}
+
+message GetRangeResponse {
+    KeyValue kv = 1;
+}
+
+message DeleteRangeResponse {
+    KeyValue kv = 1;
+}
+
+
+//The Key when querying directly for it
+//The Key in general could be any bytes, but pattern-scanning requires string,
+//so I have decided to increase the requirements in order to add the convenience
+//of pattern-searching.
+message Key {
+    bytes key = 1;
+}
+
+//A key-range is the only possibility of querying the data outside of a direct Key.
+//The logical operator between using prefix, pattern and from-to together is AND.
+//OR is not implemented as it can be done using more than one request
+//Empty KeyRange implies a full database stream
+message KeyRange {
+    //A key-prefix to search within.
+    //when using prefix along-side pattern and/or from-to they should both match.
+    // ie. a prefix "jo" could be used to speed up query speed of
+    //     pattern "john*" or from: "john1" to: "john6"
+    //the server will not try to guess a prefix from the pattern or from-to parameters
+    //pattern-searching is the slowest operation.
+    //pattern john* is the same as prefix: john, but slower
+    bytes prefix = 1;
+
+    // RE2 style regex syntax via golang core: https://golang.org/pkg/regexp/
+    string pattern = 2;
+
+    // both inclusive
+    // required for discrete systems with discrete queries
+    //  -- since you cannot reference a value outside of the last/first,
+    //     and would then not be able to query the last/first record.
+    //     and +1 semantics on strings don't really work
+    bytes lower = 3;
+    bytes upper = 4;
+
+    enum Direction {
+        DIRECTION_UNSPECIFIED = 0;
+        FORWARD = 1;
+        REVERSE = 2;
+    }
+
+    Direction direction = 5;
+}
+
+message KeyValue {
+    bytes key = 1;
+    //You can easily replace this with google's Any if your want to
+    //Or replace with your own message-type
+    //
+    //fx you have some software that simply expose data from a datasource
+    //Your software exposes it as proto. This will be your datasource.
+    // rewrite this .proto-file on the client side
+    // add `import "your_messages_file.proto"`
+    // replace the bytes of this with the type/format you wish to save
+    // this works because string, bytes and nested messages are encoded the same:
+    //   read https://developers.google.com/protocol-buffers/docs/encoding#strings
+    //   and https://developers.google.com/protocol-buffers/docs/encoding#embedded
+    bytes value = 2;
+}
