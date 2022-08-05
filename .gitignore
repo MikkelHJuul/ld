@@ -5,3 +5,4 @@ test/build
 data
 ld_badger
 coverage.txt
+.vscode
